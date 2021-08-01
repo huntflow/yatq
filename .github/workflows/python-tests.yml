@@ -108,7 +108,8 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov yatq
+        pytest --cov yatq --cov-report=xml
     
     - name: Upload coverage
       uses: codecov/codecov-action@v2
+      files: ./coverage.xml
