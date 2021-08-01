@@ -41,13 +41,9 @@ jobs:
   mypy:
 
     runs-on: ubuntu-latest
-    strategy:
 
     steps:
     - uses: actions/checkout@v2
-
-    - name: Install redis
-      run: sudo apt-get install redis-server
 
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
