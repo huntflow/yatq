@@ -19,10 +19,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install redis
-      uses: shogo82148/actions-setup-redis@v1
-      with:
-        redis-version: ${{ matrix.redis }}
-        auto-start: "false"
+      run: sudo apt-get install redis-server
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
