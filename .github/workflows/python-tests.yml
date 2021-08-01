@@ -80,4 +80,4 @@ jobs:
 
     - name: Check codestyle with black
       run: |
-        black yatq
+        black --check yatq
