@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install -f requirements-test.txt
+        pip install -r requirements-test.txt
     - name: Install yatq
       run: |
         pip install .
