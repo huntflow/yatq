@@ -18,6 +18,7 @@ async def test_task_preserve_data_during_processing(task_queue, queue_checker):
         "sublist": [[1, 2, []]],
     }
     task_id = await task_queue.add_task(
+        "test",
         task_data=task_data,
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=1,
@@ -47,6 +48,7 @@ async def test_task_data_cleanup(task_queue, queue_checker):
         "sublist": [[1, 2, []]],
     }
     task_id = await task_queue.add_task(
+        "test",
         task_data=task_data,
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=1,

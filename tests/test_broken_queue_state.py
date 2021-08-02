@@ -6,7 +6,7 @@ from yatq.exceptions import RescheduledTaskMissing
 
 @pytest.mark.asyncio
 async def test_get_task_missing_data(task_queue, queue_checker, queue_breaker):
-    task_id = await task_queue.add_task({"test": "test"})
+    task_id = await task_queue.add_task("test", {"test": "test"})
 
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
@@ -29,8 +29,8 @@ async def test_get_task_missing_data(task_queue, queue_checker, queue_breaker):
 async def test_multuple_get_tasks_missing_data(
     task_queue, queue_breaker, queue_checker
 ):
-    task_id_1 = await task_queue.add_task({"test": "test"})
-    task_id_2 = await task_queue.add_task({"test": "test"})
+    task_id_1 = await task_queue.add_task("test", {"test": "test"})
+    task_id_2 = await task_queue.add_task("test", {"test": "test"})
 
     await queue_checker.assert_pending_count(2)
     await queue_checker.assert_processing_count(0)
@@ -59,7 +59,7 @@ async def test_multuple_get_tasks_missing_data(
 
 @pytest.mark.asyncio
 async def test_get_task_missing_mapping(task_queue, queue_breaker, queue_checker):
-    task_id = await task_queue.add_task({"test": "test"})
+    task_id = await task_queue.add_task("test", {"test": "test"})
 
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
@@ -82,8 +82,8 @@ async def test_get_task_missing_mapping(task_queue, queue_breaker, queue_checker
 async def test_multiple_get_tasks_missing_mapping(
     task_queue, queue_checker, queue_breaker
 ):
-    task_id_1 = await task_queue.add_task({"test": "test"})
-    task_id_2 = await task_queue.add_task({"test": "test"})
+    task_id_1 = await task_queue.add_task("test", {"test": "test"})
+    task_id_2 = await task_queue.add_task("test", {"test": "test"})
 
     await queue_checker.assert_pending_count(2)
     await queue_checker.assert_processing_count(0)
@@ -111,7 +111,7 @@ async def test_multiple_get_tasks_missing_mapping(
 
 @pytest.mark.asyncio
 async def test_add_missing_mapping_key(task_queue, queue_breaker, queue_checker):
-    task_id_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_1 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
 
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
@@ -120,7 +120,7 @@ async def test_add_missing_mapping_key(task_queue, queue_breaker, queue_checker)
     await queue_breaker.drop_task_mapping("key")
     await queue_checker.assert_mapping_len(0)
 
-    task_id_2 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_2 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
 
     assert task_id_1 != task_id_2
 
@@ -145,7 +145,7 @@ async def test_add_existing_pending_missing_mapping_entry(
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(0)
 
-    task_id_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_1 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
@@ -166,7 +166,7 @@ async def test_add_existing_processing_missing_mapping_entry(
     await queue_checker.assert_processing_count(1)
     await queue_checker.assert_mapping_len(0)
 
-    task_id_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_1 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
@@ -188,7 +188,7 @@ async def test_add_existing_processing_existing_pending_missing_mapping_entry(
     await queue_checker.assert_processing_count(1)
     await queue_checker.assert_mapping_len(0)
 
-    task_id_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_1 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
@@ -203,7 +203,7 @@ async def test_add_existing_processing_existing_pending_missing_mapping_entry(
 
 @pytest.mark.asyncio
 async def test_add_missing_data_pending(task_queue, queue_checker, queue_breaker):
-    task_id_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_1 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
@@ -214,7 +214,7 @@ async def test_add_missing_data_pending(task_queue, queue_checker, queue_breaker
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
 
-    task_id_2 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_2 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     assert task_id_1 != task_id_2
 
     await queue_checker.assert_pending_count(1)
@@ -227,7 +227,7 @@ async def test_add_missing_data_pending(task_queue, queue_checker, queue_breaker
 
 @pytest.mark.asyncio
 async def test_add_missing_data_processing(task_queue, queue_breaker, queue_checker):
-    task_id_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_1 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
@@ -240,7 +240,7 @@ async def test_add_missing_data_processing(task_queue, queue_breaker, queue_chec
     await queue_checker.assert_processing_count(1)
     await queue_checker.assert_mapping_len(1)
 
-    task_id_2 = await task_queue.add_task({"test": "test"}, task_key="key")
+    task_id_2 = await task_queue.add_task("test", {"test": "test"}, task_key="key")
     assert task_id_1 != task_id_2
 
     await queue_checker.assert_pending_count(1)
@@ -254,7 +254,7 @@ async def test_add_missing_data_processing(task_queue, queue_breaker, queue_chec
 @pytest.mark.asyncio
 async def test_reschedule_key_missing(task_queue, queue_breaker, queue_checker):
     task_id_1 = await task_queue.add_task(
-        {"test": "test"}, task_key="key", retry_policy=RetryPolicy.LINEAR
+        "test", {"test": "test"}, task_key="key", retry_policy=RetryPolicy.LINEAR
     )
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
@@ -271,7 +271,7 @@ async def test_reschedule_key_missing(task_queue, queue_breaker, queue_checker):
 @pytest.mark.asyncio
 async def test_reschedule_key_changed(task_queue, queue_breaker, queue_checker):
     task_id_1 = await task_queue.add_task(
-        {"test": "test"}, task_key="key", retry_policy=RetryPolicy.LINEAR
+        "test", {"test": "test"}, task_key="key", retry_policy=RetryPolicy.LINEAR
     )
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
@@ -281,7 +281,7 @@ async def test_reschedule_key_changed(task_queue, queue_breaker, queue_checker):
     assert task.task.id == task_id_1
     await queue_breaker.drop_task_mapping("key")
 
-    task_id_2 = await task_queue.add_task({"test": "test2"}, task_key="key")
+    task_id_2 = await task_queue.add_task("test", {"test": "test2"}, task_key="key")
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)

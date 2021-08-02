@@ -8,7 +8,7 @@ from yatq.queue import Queue
 
 @pytest.mark.asyncio
 async def test_task_scheduling(task_queue, queue_checker):
-    task_id = await task_queue.add_task({"key": "value"})
+    task_id = await task_queue.add_task("test", {"key": "value"})
 
     assert isinstance(task_id, str)
 
@@ -25,7 +25,7 @@ async def test_task_scheduling(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_check(task_queue):
-    task_id = await task_queue.add_task({"key": "value"})
+    task_id = await task_queue.add_task("test", {"key": "value"})
 
     task = await task_queue.check_task(task_id)
     assert task.data == {"key": "value"}
@@ -40,11 +40,11 @@ async def test_task_missing_check(task_queue):
 
 @pytest.mark.asyncio
 async def test_task_scheduling_multiple_tasks(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"})
+    first_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
-    second_task_id = await task_queue.add_task({"key": "value"})
+    second_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(second_task_id, str)
     await queue_checker.assert_state(second_task_id, TaskState.QUEUED)
 
@@ -56,13 +56,15 @@ async def test_task_scheduling_multiple_tasks(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_scheduling_multiple_tasks_unique_key(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"}, task_key="unique_key")
+    first_task_id = await task_queue.add_task(
+        "test", {"key": "value"}, task_key="unique_key"
+    )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
     with pytest.raises(TaskAddException) as error:
         await task_queue.add_task(
-            {"key": "value"}, task_key="unique_key", ignore_existing=False
+            "test", {"key": "value"}, task_key="unique_key", ignore_existing=False
         )
     assert error.value.state == "PENDING"
 
@@ -76,12 +78,14 @@ async def test_task_scheduling_multiple_tasks_unique_key(task_queue, queue_check
 async def test_task_scheduling_multiple_tasks_unique_key_ignore_existing(
     task_queue, queue_checker
 ):
-    first_task_id = await task_queue.add_task({"key": "value"}, task_key="unique_key")
+    first_task_id = await task_queue.add_task(
+        "test", {"key": "value"}, task_key="unique_key"
+    )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
     second_task_id = await task_queue.add_task(
-        {"key": "value"}, task_key="unique_key", ignore_existing=True
+        "test", {"key": "value"}, task_key="unique_key", ignore_existing=True
     )
     assert first_task_id == second_task_id
 
@@ -95,12 +99,14 @@ async def test_task_scheduling_multiple_tasks_unique_key_ignore_existing(
 async def test_task_scheduling_multiple_tasks_unique_non_conflicting(
     task_queue, queue_checker
 ):
-    first_task_id = await task_queue.add_task({"key": "value"}, task_key="unique_key")
+    first_task_id = await task_queue.add_task(
+        "test", {"key": "value"}, task_key="unique_key"
+    )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
     second_task_id = await task_queue.add_task(
-        {"key": "value"}, task_key="another_unique_key"
+        "test", {"key": "value"}, task_key="another_unique_key"
     )
     assert isinstance(second_task_id, str)
     await queue_checker.assert_state(second_task_id, TaskState.QUEUED)
@@ -113,7 +119,7 @@ async def test_task_scheduling_multiple_tasks_unique_non_conflicting(
 
 @pytest.mark.asyncio
 async def test_task_receiving(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"})
+    first_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -133,7 +139,9 @@ async def test_task_receiving(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_unique_processing(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"}, task_key="unique_key")
+    first_task_id = await task_queue.add_task(
+        "test", {"key": "value"}, task_key="unique_key"
+    )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -149,7 +157,7 @@ async def test_task_unique_processing(task_queue, queue_checker):
 
     with pytest.raises(TaskAddException) as error:
         await task_queue.add_task(
-            {"key": "value"}, task_key="unique_key", ignore_existing=False
+            "test", {"key": "value"}, task_key="unique_key", ignore_existing=False
         )
 
     assert error.value.state == TaskState.PROCESSING
@@ -163,7 +171,9 @@ async def test_task_unique_processing(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_unique_processing_non_conflicting(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"}, task_key="unique_key")
+    first_task_id = await task_queue.add_task(
+        "test", {"key": "value"}, task_key="unique_key"
+    )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -178,7 +188,7 @@ async def test_task_unique_processing_non_conflicting(task_queue, queue_checker)
     await queue_checker.assert_processing_count(1)
 
     second_task_id = await task_queue.add_task(
-        {"key": "value"}, task_key="another_unique_key"
+        "test", {"key": "value"}, task_key="another_unique_key"
     )
     assert isinstance(second_task_id, str)
     await queue_checker.assert_state(second_task_id, TaskState.QUEUED)
@@ -192,7 +202,7 @@ async def test_task_unique_processing_non_conflicting(task_queue, queue_checker)
 
 @pytest.mark.asyncio
 async def test_task_completion(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"})
+    first_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -218,7 +228,7 @@ async def test_task_completion(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_completion_failed(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"})
+    first_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -244,7 +254,7 @@ async def test_task_completion_failed(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_failure(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"})
+    first_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -268,7 +278,7 @@ async def test_task_failure(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_retry_no_policy(task_queue, queue_checker):
-    first_task_id = await task_queue.add_task({"key": "value"})
+    first_task_id = await task_queue.add_task("test", {"key": "value"})
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
 
@@ -295,7 +305,7 @@ async def test_task_retry_no_policy(task_queue, queue_checker):
 @pytest.mark.asyncio
 async def test_task_retry_linear_policy(task_queue, queue_checker, freezer):
     first_task_id = await task_queue.add_task(
-        {"key": "value"}, retry_policy=RetryPolicy.LINEAR, retry_delay=2
+        "test", {"key": "value"}, retry_policy=RetryPolicy.LINEAR, retry_delay=2
     )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
@@ -361,7 +371,7 @@ async def test_task_retry_linear_policy(task_queue, queue_checker, freezer):
 @pytest.mark.asyncio
 async def test_task_retry_exponential_policy(task_queue, queue_checker, freezer):
     first_task_id = await task_queue.add_task(
-        {"key": "value"}, retry_policy=RetryPolicy.EXPONENTIAL, retry_delay=4
+        "test", {"key": "value"}, retry_policy=RetryPolicy.EXPONENTIAL, retry_delay=4
     )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
@@ -423,7 +433,7 @@ async def test_task_retry_exponential_policy(task_queue, queue_checker, freezer)
 @pytest.mark.asyncio
 async def test_task_retry_forced(task_queue, queue_checker, freezer):
     first_task_id = await task_queue.add_task(
-        {"key": "value"}, retry_policy=RetryPolicy.EXPONENTIAL, retry_delay=4
+        "test", {"key": "value"}, retry_policy=RetryPolicy.EXPONENTIAL, retry_delay=4
     )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)
@@ -449,6 +459,7 @@ async def test_task_retry_forced(task_queue, queue_checker, freezer):
 async def test_task_retry_limit(task_queue, queue_checker):
     retry_limit = 3
     task_id = await task_queue.add_task(
+        "test",
         {"key": "value"},
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=retry_limit,
@@ -495,7 +506,11 @@ async def test_task_retry_limit(task_queue, queue_checker):
 @pytest.mark.asyncio
 async def test_task_retry_delay(task_queue, queue_checker, freezer):
     first_task_id = await task_queue.add_task(
-        {"key": "value"}, retry_policy=RetryPolicy.LINEAR, retry_limit=1, retry_delay=2
+        "test",
+        {"key": "value"},
+        retry_policy=RetryPolicy.LINEAR,
+        retry_limit=1,
+        retry_delay=2,
     )
     assert isinstance(first_task_id, str)
     await queue_checker.assert_state(first_task_id, TaskState.QUEUED)

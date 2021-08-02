@@ -148,6 +148,7 @@ class Queue:
 
     async def add_task(
         self,
+        name: str,
         task_data: Dict[str, Any],
         task_key: Optional[str] = None,
         task_timeout: int = DEFAULT_TIMEOUT,
@@ -166,6 +167,7 @@ class Queue:
 
         task = Task(
             id=task_id,
+            name=name,
             timeout=task_timeout,
             policy=retry_policy,
             delay=retry_delay,
