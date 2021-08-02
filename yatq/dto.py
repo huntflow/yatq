@@ -1,13 +1,14 @@
+import json
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, NamedTuple, Optional
-
-from pydantic import BaseModel
 
 from .defaults import DEFAULT_TASK_EXPIRATION
 from .enums import QueueAction, RetryPolicy, TaskState
 
 
-class QueueEvent(BaseModel):
+@dataclass
+class QueueEvent:
 
     """
     Model of some event that happened in queue
@@ -28,7 +29,8 @@ class QueueEvent(BaseModel):
     message: Optional[str] = None
 
 
-class Task(BaseModel):
+@dataclass
+class Task:
 
     """
     Representation of task
@@ -68,9 +70,9 @@ class Task(BaseModel):
     """
 
     id: str
-    data: Optional[Dict[str, Any]]
-    encoded_data: Optional[str]
     timeout: int
+
+    encoded_data: Optional[str] = None
 
     ttl: Optional[int] = DEFAULT_TASK_EXPIRATION
     keep_completed_data: bool = False
@@ -83,6 +85,20 @@ class Task(BaseModel):
 
     retry_counter: int = 0
     retry_limit: int = 3
+
+    @property
+    def data(self) -> Optional[Dict]:
+        if self.encoded_data is None:
+            return None
+
+        return json.loads(self.encoded_data)
+
+    @data.setter
+    def data(self, value: Optional[Dict]):
+        if value is not None:
+            self.encoded_data = json.dumps(value)
+        else:
+            self.encoded_data = None
 
 
 class TaskWrapper(NamedTuple):

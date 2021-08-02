@@ -1,8 +1,7 @@
-import asyncio
+import dataclasses
 import json
 import logging
 import time
-from contextlib import suppress
 from os.path import dirname
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -16,8 +15,8 @@ from .defaults import (
     DEFAULT_TASK_EXPIRATION,
     DEFAULT_TIMEOUT,
 )
-from .dto import QueueEvent, Task, TaskWrapper
-from .enums import QueueAction, RetryPolicy, TaskState
+from .dto import Task, TaskWrapper
+from .enums import RetryPolicy, TaskState
 from .exceptions import (
     RescheduledTaskMissing,
     RescheduleLimitReached,
@@ -31,19 +30,12 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_LUA_DIR = Path(dirname(__file__)) / "lua"
 
 
-def encode_task(task: Task, clean_data=False) -> str:
-    if task.data and not clean_data:
-        task.encoded_data = json.dumps(task.data)
-    if clean_data:
-        task.encoded_data = None
-    return task.json(exclude={"data"})
+def encode_task(task: Task) -> str:
+    return json.dumps(dataclasses.asdict(task))
 
 
 def decode_task(data: dict) -> Task:
-    task = Task(**data)
-    if task.encoded_data:
-        task.data = json.loads(task.encoded_data)
-    return task
+    return Task(**data)
 
 
 PATH_TYPE = Union[str, Path]
@@ -174,7 +166,6 @@ class Queue:
 
         task = Task(
             id=task_id,
-            data=task_data,
             timeout=task_timeout,
             policy=retry_policy,
             delay=retry_delay,
@@ -182,6 +173,7 @@ class Queue:
             ttl=ttl,
             keep_completed_data=keep_completed_data,
         )
+        task.data = task_data
         serialized_task = encode_task(task)
         self.logger.debug("Adding task: key = %s, task = %s", task_key, serialized_task)
 
@@ -227,12 +219,15 @@ class Queue:
             TaskState.COMPLETED,
             TaskState.FAILED,
         ), "Task not in final state"
-        clean_data = not wrapped_task.task.keep_completed_data
+
+        if not wrapped_task.task.keep_completed_data:
+            wrapped_task.task.data = None
+
         await self._complete_function.call(
             self.client,
             wrapped_task.key,
             wrapped_task.task.id,
-            encode_task(wrapped_task.task, clean_data=clean_data),
+            encode_task(wrapped_task.task),
             wrapped_task.task.ttl or 0,
         )
 
