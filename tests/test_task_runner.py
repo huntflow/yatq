@@ -1,10 +1,9 @@
-import pytest
-
 from unittest.mock import MagicMock
+
+import pytest
 
 from yatq.dto import Task
 from yatq.worker import BaseTaskRunner
-
 
 # NOTE: Rewrite using AsyncMock after dropping py37 support
 
@@ -27,7 +26,6 @@ async def test_runner_pre_exception():
     post_run = MagicMock()
 
     class Runner(BaseTaskRunner):
-
         async def pre_run(self) -> None:
             raise ValueError(1)
 
@@ -55,7 +53,6 @@ async def test_runner_run_exception():
     post_run = MagicMock()
 
     class Runner(BaseTaskRunner):
-
         async def pre_run(self) -> None:
             pre_run()
 
@@ -83,7 +80,6 @@ async def test_runner_post_exception():
     run = MagicMock()
 
     class Runner(BaseTaskRunner):
-
         async def pre_run(self) -> None:
             pre_run()
 

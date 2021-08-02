@@ -5,7 +5,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class BaseTaskRunner:
-
     def __init__(self, ctx: Dict[str, Any], task: "Task") -> None:
         self.ctx = ctx
         self.task = task
