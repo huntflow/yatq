@@ -10,25 +10,25 @@ class BaseTaskRunner:
         self.ctx = ctx
         self.task = task
 
-        self.run_start: Optional[int] = None
-        self.run_stop: Optional[int] = None
+        self.run_start: Optional[float] = None
+        self.run_stop: Optional[float] = None
 
-        self.post_process_start: Optional[int] = None
-        self.post_process_stop: Optional[int] = None
+        self.post_process_start: Optional[float] = None
+        self.post_process_stop: Optional[float] = None
 
     @property
-    def process_duration(self) -> int:
+    def process_duration(self) -> float:
         if not (self.run_start and self.run_stop):
-            return 0
+            return 0.0
 
-        return self.run_stop - self.run_start
+        return round(self.run_stop - self.run_start, 4)
 
     @property
-    def post_process_duration(self) -> int:
+    def post_process_duration(self) -> float:
         if not (self.post_process_start and self.post_process_stop):
-            return 0
+            return 0.0
 
-        return self.post_process_stop - self.post_process_start
+        return round(self.post_process_stop - self.post_process_start, 4)
 
     async def process(self) -> None:
         await self.pre_run()

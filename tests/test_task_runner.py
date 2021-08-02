@@ -154,11 +154,11 @@ async def test_runner_duration_processing(freezer):
 
     runner = Runner(ctx, task)
 
-    assert runner.process_duration == 0
-    assert runner.post_process_duration == 0
+    assert runner.process_duration == 0.0
+    assert runner.post_process_duration == 0.0
 
     await runner.process()
     await runner.do_post_process()
 
-    assert runner.process_duration == 3
-    assert runner.post_process_duration == 5
+    assert runner.process_duration == 3.0
+    assert runner.post_process_duration == 5.0
