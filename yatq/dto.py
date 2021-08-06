@@ -70,7 +70,6 @@ class Task:
     """
 
     id: str
-    name: str
     timeout: int
 
     encoded_data: Optional[str] = None

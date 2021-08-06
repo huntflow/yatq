@@ -11,7 +11,7 @@ from yatq.worker import BaseTaskRunner
 @pytest.mark.asyncio
 async def test_base_runner():
     ctx = {}
-    task = Task("test", {"test": "test"}, 0)
+    task = Task("test", 0)
 
     runner = BaseTaskRunner(ctx, task)
     await runner.process()
@@ -21,7 +21,7 @@ async def test_base_runner():
 @pytest.mark.asyncio
 async def test_runner_post_process():
     ctx = {}
-    task = Task("test", {"test": "test"}, 0)
+    task = Task({"test": "test"}, 0)
 
     pre_run = MagicMock()
     run = MagicMock()
@@ -56,7 +56,7 @@ async def test_runner_post_process():
 @pytest.mark.asyncio
 async def test_runner_pre_exception():
     ctx = {}
-    task = Task("test", {"test": "test"}, 0)
+    task = Task("test", 0)
 
     run = MagicMock()
     post_run = MagicMock()
@@ -83,7 +83,7 @@ async def test_runner_pre_exception():
 @pytest.mark.asyncio
 async def test_runner_run_exception():
     ctx = {}
-    task = Task("test", {"test": "test"}, 0)
+    task = Task("test", 0)
 
     pre_run = MagicMock()
     post_run = MagicMock()
@@ -110,7 +110,7 @@ async def test_runner_run_exception():
 @pytest.mark.asyncio
 async def test_runner_post_exception():
     ctx = {}
-    task = Task("test", {"test": "test"}, 0)
+    task = Task("test", 0)
 
     pre_run = MagicMock()
     run = MagicMock()

@@ -1,5 +1,5 @@
 from time import time
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:  # pragma: no cover
     from yatq.dto import Task

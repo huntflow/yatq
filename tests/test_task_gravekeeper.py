@@ -5,7 +5,7 @@ from yatq.dto import TaskState
 
 @pytest.mark.asyncio
 async def test_task_gravekeeping(task_queue, queue_checker):
-    await task_queue.add_task("test", {"test": "test"}, task_timeout=0)
+    await task_queue.add_task({"test": "test"}, task_timeout=0)
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(1)
@@ -27,8 +27,8 @@ async def test_task_gravekeeping(task_queue, queue_checker):
 async def test_task_gravekeeper_cleanup_pending(
     task_queue, queue_checker, queue_breaker, redis_connection
 ):
-    await task_queue.add_task("test", {"test": "test"}, task_key="key")
-    await task_queue.add_task("test", {"test": "test"}, task_key="key2")
+    await task_queue.add_task({"test": "test"}, task_key="key")
+    await task_queue.add_task({"test": "test"}, task_key="key2")
     await queue_checker.assert_pending_count(2)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(2)
@@ -56,8 +56,8 @@ async def test_task_gravekeeper_cleanup_pending(
 async def test_task_gravekeeper_cleanup_processing(
     task_queue, queue_checker, queue_breaker, redis_connection
 ):
-    await task_queue.add_task("test", {"test": "test"}, task_key="key")
-    await task_queue.add_task("test", {"test": "test"}, task_key="key2")
+    await task_queue.add_task({"test": "test"}, task_key="key")
+    await task_queue.add_task({"test": "test"}, task_key="key2")
     await task_queue.get_task()
     await task_queue.get_task()
 
