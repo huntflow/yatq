@@ -9,20 +9,20 @@ from yatq.dto import TaskState
 from yatq.queue import Queue
 
 if aioredis.__version__ >= "2.0":
+
     async def create_redis_connection(redis_uri: str):
         return aioredis.from_url(redis_uri)
 
-    async def zadd_single(
-        client: aioredis.Redis, set_name: str, key: str, value: Any
-    ):
+    async def zadd_single(client: aioredis.Redis, set_name: str, key: str, value: Any):
         await client.zadd(set_name, {key: value})
+
+
 else:
+
     async def create_redis_connection(redis_uri: str):
         return await aioredis.create_redis(redis_uri)
 
-    async def zadd_single(
-        client: aioredis.Redis, set_name: str, key: str, value: Any
-    ):
+    async def zadd_single(client: aioredis.Redis, set_name: str, key: str, value: Any):
         await client.zadd(set_name, value, key)
 
 
