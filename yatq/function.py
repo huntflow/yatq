@@ -5,7 +5,8 @@ from string import Template
 from typing import Any, Dict
 
 from aioredis import Redis
-from aioredis.exceptions import NoScriptError
+
+from yatq.redis_compat import NoScriptError, eval_sha  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class LuaFunction:
         await client.script_load(self.lua)
 
     async def _call_cached(self, client: Redis, *args):
-        return await client.evalsha(self.digest, 0, *args)
+        return await eval_sha(client, self.digest, args)
 
     async def call(self, client: Redis, *args):
         try:

@@ -1,5 +1,6 @@
 import pytest
 
+from tests.conftest import zadd_single
 from yatq.enums import RetryPolicy
 from yatq.exceptions import RescheduledTaskMissing
 
@@ -140,7 +141,8 @@ async def test_add_missing_mapping_key(task_queue, queue_breaker, queue_checker)
 async def test_add_existing_pending_missing_mapping_entry(
     task_queue, queue_checker, redis_connection
 ):
-    await redis_connection.zadd(task_queue.pending_set_name, {"key": 1})
+    await zadd_single(redis_connection, task_queue.pending_set_name, "key", 1)
+
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(0)
     await queue_checker.assert_mapping_len(0)
@@ -161,7 +163,8 @@ async def test_add_existing_pending_missing_mapping_entry(
 async def test_add_existing_processing_missing_mapping_entry(
     task_queue, queue_checker, redis_connection
 ):
-    await redis_connection.zadd(task_queue.processing_set_name, {"key": 1})
+    await zadd_single(redis_connection, task_queue.processing_set_name, "key", 1)
+
     await queue_checker.assert_pending_count(0)
     await queue_checker.assert_processing_count(1)
     await queue_checker.assert_mapping_len(0)
@@ -182,8 +185,9 @@ async def test_add_existing_processing_missing_mapping_entry(
 async def test_add_existing_processing_existing_pending_missing_mapping_entry(
     task_queue, queue_checker, redis_connection
 ):
-    await redis_connection.zadd(task_queue.processing_set_name, {"key": 1})
-    await redis_connection.zadd(task_queue.pending_set_name, {"key": 1})
+    await zadd_single(redis_connection, task_queue.processing_set_name, "key", 1)
+    await zadd_single(redis_connection, task_queue.pending_set_name, "key", 1)
+
     await queue_checker.assert_pending_count(1)
     await queue_checker.assert_processing_count(1)
     await queue_checker.assert_mapping_len(0)
