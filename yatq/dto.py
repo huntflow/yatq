@@ -1,3 +1,4 @@
+import asyncio
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -114,3 +115,16 @@ class TaskWrapper(NamedTuple):
     key: str
     task: Task
     deadline: Optional[datetime] = None
+
+
+class ScheduledTask(NamedTuple):
+
+    """
+    Representation of newly created task
+
+    :param id: Task id
+    :param completed: Task completion event
+    """
+
+    id: str
+    completed: asyncio.Event

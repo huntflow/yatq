@@ -17,13 +17,13 @@ async def test_task_preserve_data_during_processing(task_queue, queue_checker):
         },
         "sublist": [[1, 2, []]],
     }
-    task_id = await task_queue.add_task(
+    task_1 = await task_queue.add_task(
         task_data=task_data,
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=1,
         retry_delay=0,
     )
-    await queue_checker.assert_state(task_id, TaskState.QUEUED)
+    await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
     task = await task_queue.get_task()
     assert task.task.data == task_data
 
@@ -46,14 +46,14 @@ async def test_task_data_cleanup(task_queue, queue_checker):
         },
         "sublist": [[1, 2, []]],
     }
-    task_id = await task_queue.add_task(
+    task_1 = await task_queue.add_task(
         task_data=task_data,
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=1,
         retry_delay=0,
         keep_completed_data=False,
     )
-    await queue_checker.assert_state(task_id, TaskState.QUEUED)
+    await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
     task = await task_queue.get_task()
     assert task.task.data == task_data
 

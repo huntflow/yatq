@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import json
 import logging
@@ -15,7 +16,7 @@ from .defaults import (
     DEFAULT_TASK_EXPIRATION,
     DEFAULT_TIMEOUT,
 )
-from .dto import Task, TaskWrapper
+from .dto import ScheduledTask, Task, TaskWrapper
 from .enums import RetryPolicy, TaskState
 from .exceptions import (
     RescheduledTaskMissing,
@@ -157,7 +158,7 @@ class Queue:
         ignore_existing: bool = True,
         ttl=DEFAULT_TASK_EXPIRATION,
         keep_completed_data=True,
-    ) -> str:
+    ) -> ScheduledTask:
         task_id = str(uuid4())
         self.logger.debug("Task data to add: %s", task_data)
 
@@ -183,7 +184,7 @@ class Queue:
 
         success: bool = result["success"]
         if success:
-            return task_id
+            return ScheduledTask(id=task_id, completed=asyncio.Event())
 
         if not ignore_existing:
             raise TaskAddException(
@@ -191,7 +192,7 @@ class Queue:
                 task_id=result["id"],
             )
 
-        return result["id"]
+        return ScheduledTask(id=result["id"], completed=asyncio.Event())
 
     async def get_task(self) -> Optional[TaskWrapper]:
         result = await self._get_function.call(self.client, time.time())
