@@ -1,3 +1,4 @@
+BURY_TEMPLATE = """
 --[[
 Template file of Lua function, used to drop stale tasks from processing set
 --]]
@@ -111,3 +112,4 @@ end
 incr_metric_key_by("$metrics_broken_key", cleaned_up)
 
 return cjson.encode({success = true, count = buried_count, cleaned_up = cleaned_up})
+"""

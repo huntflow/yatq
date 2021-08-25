@@ -3,7 +3,6 @@ import dataclasses
 import json
 import logging
 import time
-from os.path import dirname
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4
@@ -26,9 +25,15 @@ from .exceptions import (
     TaskRetryForbidden,
 )
 from .function import LuaFunction
+from .lua import (
+    ADD_TEMPLATE,
+    BURY_TEMPLATE,
+    COMPLETE_TEMPLATE,
+    GET_TEMPLATE,
+    RESCHEDULE_TEMPLATE,
+)
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_LUA_DIR = Path(dirname(__file__)) / "lua"
 
 
 def encode_task(task: Task) -> str:
@@ -48,11 +53,11 @@ class Queue:
         client: Redis,
         name: str = DEFAULT_QUEUE_NAME,
         namespace: str = DEFAULT_QUEUE_NAMESPACE,
-        add_src_path: PATH_TYPE = DEFAULT_LUA_DIR / "add_template.lua",
-        get_src_path: PATH_TYPE = DEFAULT_LUA_DIR / "get_template.lua",
-        complete_src_path: PATH_TYPE = DEFAULT_LUA_DIR / "complete_template.lua",
-        reschedule_src_path: PATH_TYPE = DEFAULT_LUA_DIR / "reschedule_template.lua",
-        bury_src_path: PATH_TYPE = DEFAULT_LUA_DIR / "bury_template.lua",
+        add_template: str = ADD_TEMPLATE,
+        get_template: str = GET_TEMPLATE,
+        complete_template: str = COMPLETE_TEMPLATE,
+        reschedule_template: str = RESCHEDULE_TEMPLATE,
+        bury_template: str = BURY_TEMPLATE,
         logger: Optional[logging.Logger] = None,
     ):
         self.client = client
@@ -61,20 +66,11 @@ class Queue:
 
         self.logger = logger or LOGGER
 
-        with open(add_src_path) as src:
-            self._add_function = LuaFunction(src.read(), self.environment)
-
-        with open(get_src_path) as src:
-            self._get_function = LuaFunction(src.read(), self.environment)
-
-        with open(complete_src_path) as src:
-            self._complete_function = LuaFunction(src.read(), self.environment)
-
-        with open(reschedule_src_path) as src:
-            self._reschedule_function = LuaFunction(src.read(), self.environment)
-
-        with open(bury_src_path) as src:
-            self._bury_function = LuaFunction(src.read(), self.environment)
+        self._add_function = LuaFunction(add_template, self.environment)
+        self._get_function = LuaFunction(get_template, self.environment)
+        self._complete_function = LuaFunction(complete_template, self.environment)
+        self._reschedule_function = LuaFunction(reschedule_template, self.environment)
+        self._bury_function = LuaFunction(bury_template, self.environment)
 
     @property
     def _key_prefix(self) -> str:

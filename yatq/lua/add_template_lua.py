@@ -1,3 +1,4 @@
+ADD_TEMPLATE = """
 --[[
 Template file of Lua function, used to add new tasks to queue
 --]]
@@ -108,3 +109,4 @@ redis.call("PUBLISH", channel, message)
 incr_metric_key("$metrics_added_key")
 
 return cjson.encode({success = true})
+"""

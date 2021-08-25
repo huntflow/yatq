@@ -1,3 +1,4 @@
+COMPLETE_TEMPLATE = """
 --[[
 Template file of Lua function, used to mark tasks as completed.
 --]]
@@ -61,3 +62,4 @@ redis.call("PUBLISH", channel, message)
 incr_metric_key("$metrics_completed_key")
 
 return cjson.encode({success = true})
+"""

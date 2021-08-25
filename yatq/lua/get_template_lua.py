@@ -1,3 +1,4 @@
+GET_TEMPLATE = """
 --[[
 Template file of Lua function, used to get tasks from queue
 --]]
@@ -113,3 +114,4 @@ return cjson.encode({
 	deadline = task_deadline,
 	data = task_data_parsed,
 })
+"""

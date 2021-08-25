@@ -1,3 +1,4 @@
+RESCHEDULE_TEMPLATE = """
 --[[
 Template file of Lua function, used to return task to queue
 --]]
@@ -49,3 +50,4 @@ redis.call("PUBLISH", channel, message)
 incr_metric_key("$metrics_requeued_key")
 
 return cjson.encode({success = true})
+"""
