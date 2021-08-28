@@ -1,13 +1,14 @@
+from abc import ABC, abstractmethod
+from contextlib import asynccontextmanager
 from time import time
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:  # pragma: no cover
     from yatq.dto import Task
 
 
-class BaseTaskRunner:
-    def __init__(self, ctx: Dict[str, Any], task: "Task") -> None:
-        self.ctx = ctx
+class BaseJob(ABC):
+    def __init__(self, task: "Task") -> None:
         self.task = task
 
         self.run_start: Optional[float] = None
@@ -15,6 +16,8 @@ class BaseTaskRunner:
 
         self.post_process_start: Optional[float] = None
         self.post_process_stop: Optional[float] = None
+
+        self.result = None
 
     @property
     def process_duration(self) -> float:
@@ -30,31 +33,42 @@ class BaseTaskRunner:
 
         return round(self.post_process_stop - self.post_process_start, 4)
 
-    async def process(self) -> None:
-        await self.pre_run()
+    @classmethod
+    def format_result(cls, result: Any) -> str:
+        return str(result)
 
-        try:
-            self.run_start = time()
-            await self.run()
-        finally:
-            self.run_stop = time()
-            await self.post_run()
+    async def process(self) -> None:
+        async with self.run_context(), self.run_timer():
+            result = await self.run()
+            self.task.result = self.format_result(result)
 
     async def do_post_process(self) -> None:
+        async with self.post_process_timer():
+            await self.post_process()
+
+    @asynccontextmanager
+    async def run_timer(self):
+        self.run_start = time()
+        try:
+            yield
+        finally:
+            self.run_stop = time()
+
+    @asynccontextmanager
+    async def post_process_timer(self):
         self.post_process_start = time()
         try:
-            await self.post_process()
+            yield
         finally:
             self.post_process_stop = time()
 
+    @asynccontextmanager
+    async def run_context(self) -> None:
+        yield
+
+    @abstractmethod
+    async def run(self) -> None:  # pragma: no cover
+        ...
+
     async def post_process(self) -> None:
-        ...
-
-    async def pre_run(self) -> None:
-        ...
-
-    async def run(self) -> None:
-        ...
-
-    async def post_run(self) -> None:
         ...

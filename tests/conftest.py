@@ -37,6 +37,11 @@ async def redis_connection(redis_uri):
 
 @pytest.fixture
 def task_queue(redis_connection) -> Queue:
+    return Queue(client=redis_connection, name=str(uuid4()), namespace=str(uuid4()))
+
+
+@pytest.fixture
+def task_queue_default_namespace(redis_connection) -> Queue:
     return Queue(client=redis_connection, name=str(uuid4()))
 
 
