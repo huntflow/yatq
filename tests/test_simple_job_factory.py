@@ -51,3 +51,15 @@ def test_missing_key_job_creation():
 
     with pytest.raises(KeyError):
         factory.create_job(task)
+
+
+def test_missing_value_job_creation():
+    task = Task(
+        "test",
+        timeout=0,
+        encoded_data=json.dumps({}),
+    )
+    factory = SimpleJobFactory(handlers={})
+
+    with pytest.raises(ValueError):
+        factory.create_job(task)

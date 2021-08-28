@@ -11,7 +11,12 @@ if TYPE_CHECKING:  # pragma: no cover
 class SimpleJob(BaseJob):
     def __init__(self, task: "Task") -> None:
         super().__init__(task)
-        self.kwargs = task.data["kwargs"]
+
+        task_data = task.data
+        if not task_data:
+            raise ValueError("Task data is not set")
+
+        self.kwargs = task_data["kwargs"]
 
     @classmethod
     def format_result(cls, result: Any) -> str:

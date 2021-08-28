@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Set, Tuple, Type
 
 import aioredis
 
+from yatq.defaults import DEFAULT_QUEUE_NAMESPACE
 from yatq.dto import TaskWrapper
 from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
@@ -84,7 +85,7 @@ class Worker:
             LOGGER.debug("Requesting new task from queue %s", queue.name)
 
             try:
-                wrapper: TaskWrapper = await queue.get_task()
+                wrapper: Optional[TaskWrapper] = await queue.get_task()
             except Exception:  # pragma: no cover
                 LOGGER.exception("Error getting task from queue %s", queue.name)
                 continue
@@ -232,15 +233,11 @@ def build_worker(
     factory_kwargs = worker_settings.factory_kwargs or {}
     task_factory = worker_settings.factory_cls(**factory_kwargs)
 
-    queue_kwargs = {}
-    if worker_settings.queue_namespace:
-        queue_kwargs["namespace"] = worker_settings.queue_namespace
-
     queue_list: List[Queue] = [
         Queue(
             client=redis_client,
             name=queue_name,
-            **queue_kwargs,
+            namespace=worker_settings.queue_namespace or DEFAULT_QUEUE_NAMESPACE,
         )
         for queue_name in queue_names
     ]

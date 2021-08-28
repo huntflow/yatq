@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Generic, Type, TypeVar
+from typing import TYPE_CHECKING, Dict, Generic, Type, TypeVar, cast
 
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.job.simple import SimpleJob
@@ -18,7 +18,11 @@ class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJobClass]):
         self.handlers = handlers
 
     def create_job(self, task: "Task") -> T_SimpleJobClass:
-        task_function = task.data["function"]
+        task_data = task.data
+        if not task_data:
+            raise ValueError("Task data is not set")
+
+        task_function = task_data["function"]
         handler_class = self.handlers[task_function]
 
         return handler_class(task)

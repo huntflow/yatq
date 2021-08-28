@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from time import time
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Optional
 
 if TYPE_CHECKING:  # pragma: no cover
     from yatq.dto import Task
@@ -47,7 +47,7 @@ class BaseJob(ABC):
             await self.post_process()
 
     @asynccontextmanager
-    async def run_timer(self):
+    async def run_timer(self) -> AsyncIterator[None]:
         self.run_start = time()
         try:
             yield
@@ -55,7 +55,7 @@ class BaseJob(ABC):
             self.run_stop = time()
 
     @asynccontextmanager
-    async def post_process_timer(self):
+    async def post_process_timer(self) -> AsyncIterator[None]:
         self.post_process_start = time()
         try:
             yield
@@ -63,7 +63,7 @@ class BaseJob(ABC):
             self.post_process_stop = time()
 
     @asynccontextmanager
-    async def run_context(self) -> None:
+    async def run_context(self) -> AsyncIterator[None]:
         yield
 
     @abstractmethod
