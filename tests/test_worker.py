@@ -318,3 +318,25 @@ async def test_worker_job_run_failed_requeued(redis_connection, task_queue: Queu
     task = await task_queue.check_task(scheduled_task.id)
     assert task.state == TaskState.REQUEUED
     assert len(worker._job_handlers) == 0
+
+
+@pytest.mark.asyncio
+async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Queue):
+    class Settings(WorkerSettings):
+        @classmethod
+        async def redis_connection(cls):
+            return redis_connection
+
+        queue_namespace = task_queue.namespace
+        factory_kwargs = {"handlers": {}}
+
+    scheduled_task = await task_queue.add_task({"function": "job", "kwargs": {}}, task_timeout=0)
+    await task_queue.get_task()
+
+    freezer.tick(10)
+
+    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    await worker._call_gravekeeper()
+
+    task = await task_queue.check_task(scheduled_task.id)
+    assert task.state == TaskState.BURIED

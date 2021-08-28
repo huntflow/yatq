@@ -70,15 +70,17 @@ class Worker:
 
     async def _run_gravekeeper(self):
         while True:
-            for queue in self.queue_list:
-                buried_count = await queue.bury_tasks()
-
-                if buried_count:
-                    GRAVEKEEPER_LOGGER.warning(
-                        "Buried %s tasks in queue '%s'", buried_count, queue.name
-                    )
-
+            await self._call_gravekeeper()
             await asyncio.sleep(self._gravekeeper_interval)
+
+    async def _call_gravekeeper(self):
+        for queue in self.queue_list:
+            buried_count = await queue.bury_tasks()
+
+            if buried_count:
+                GRAVEKEEPER_LOGGER.warning(
+                    "Buried %s tasks in queue '%s'", buried_count, queue.name
+                )
 
     async def _try_fetch_task(self) -> bool:
         for queue in self.queue_list:
