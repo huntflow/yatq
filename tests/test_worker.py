@@ -386,7 +386,9 @@ async def test_worker_on_task_process_exception(redis_connection, task_queue: Qu
 
 
 @pytest.mark.asyncio
-async def test_worker_on_task_process_exception_failure(redis_connection, task_queue: Queue):
+async def test_worker_on_task_process_exception_failure(
+    redis_connection, task_queue: Queue
+):
     class Job(SimpleJob):
         async def run(self, **kwargs) -> Any:
             raise ValueError

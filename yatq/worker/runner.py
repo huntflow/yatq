@@ -2,7 +2,7 @@ import asyncio
 import logging.config
 import sys
 import traceback
-from typing import List, Optional, Set, Type, Callable, Awaitable
+from typing import Awaitable, Callable, List, Optional, Set, Type, cast
 
 import aioredis
 
@@ -12,7 +12,7 @@ from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
-from yatq.worker.worker_settings import WorkerSettings, T_ExcInfo
+from yatq.worker.worker_settings import T_ExcInfo, WorkerSettings
 
 LOGGER = logging.getLogger("yatq.worker")
 LOGGER.setLevel("INFO")
@@ -138,7 +138,7 @@ class Worker:
             LOGGER.exception("Exception in job")
             wrapper.task.result = {"traceback": traceback.format_exc()}
 
-            exc_info = sys.exc_info()
+            exc_info = cast(T_ExcInfo, sys.exc_info())
             try:
                 await self._on_task_process_exception(exc_info)
             except Exception:

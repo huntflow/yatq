@@ -5,7 +5,6 @@ import aioredis
 
 from yatq.worker.factory.simple import SimpleJobFactory
 
-
 T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
 
 
