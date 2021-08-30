@@ -12,7 +12,7 @@ from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
-from yatq.worker.job.base import BaseJob
+from yatq.worker.job.simple import BaseJob
 from yatq.worker.worker_settings import T_ExcInfo, WorkerSettings
 
 LOGGER = logging.getLogger("yatq.worker")

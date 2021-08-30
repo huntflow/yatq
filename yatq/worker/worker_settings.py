@@ -4,7 +4,7 @@ from typing import Dict, Optional, Tuple, Type
 import aioredis
 
 from yatq.worker.factory.simple import SimpleJobFactory
-from yatq.worker.job.simple import SimpleJob
+from yatq.worker.job.base import BaseJob
 
 T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
 
@@ -30,7 +30,7 @@ class WorkerSettings:
 
     @staticmethod
     async def on_task_process_exception(
-        job: SimpleJob,
+        job: BaseJob,
         exc_info: T_ExcInfo,
     ) -> None:  # pragma: no cover
         ...
