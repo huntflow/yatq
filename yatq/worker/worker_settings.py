@@ -1,8 +1,12 @@
-from typing import Dict, Optional, Type
+from types import TracebackType
+from typing import Dict, Optional, Tuple, Type
 
 import aioredis
 
 from yatq.worker.factory.simple import SimpleJobFactory
+
+
+T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
 
 
 class WorkerSettings:
@@ -22,4 +26,10 @@ class WorkerSettings:
 
     @staticmethod
     async def redis_client() -> aioredis.Redis:  # pragma: no cover
+        ...
+
+    @staticmethod
+    async def on_task_process_exception(
+        exc_info: T_ExcInfo,
+    ) -> None:  # pragma: no cover
         ...

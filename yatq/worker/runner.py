@@ -1,11 +1,8 @@
 import asyncio
-import logging
 import logging.config
-import signal
+import sys
 import traceback
-from contextlib import suppress
-from functools import partial
-from typing import Dict, List, Optional, Set, Tuple, Type
+from typing import List, Optional, Set, Type, Callable, Awaitable
 
 import aioredis
 
@@ -15,7 +12,7 @@ from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
-from yatq.worker.worker_settings import WorkerSettings
+from yatq.worker.worker_settings import WorkerSettings, T_ExcInfo
 
 LOGGER = logging.getLogger("yatq.worker")
 LOGGER.setLevel("INFO")
@@ -27,6 +24,7 @@ class Worker:
         self,
         queue_list: List[Queue],
         task_factory: BaseJobFactory,
+        on_task_process_exception: Callable[[T_ExcInfo], Awaitable],
         poll_interval: float = 2.0,
         max_jobs: int = 8,
         gravekeeper_interval: float = 30.0,
@@ -47,6 +45,8 @@ class Worker:
 
         self._max_jobs = max_jobs
         self._job_handlers: Set[asyncio.Task] = set()
+
+        self._on_task_process_exception = on_task_process_exception
 
     @property
     def should_get_new_task(self) -> bool:
@@ -137,6 +137,12 @@ class Worker:
         except Exception:
             LOGGER.exception("Exception in job")
             wrapper.task.result = {"traceback": traceback.format_exc()}
+
+            exc_info = sys.exc_info()
+            try:
+                await self._on_task_process_exception(exc_info)
+            except Exception:
+                LOGGER.exception("Exception in exception handler")
 
             await self._try_reschedule_task(wrapper, queue)
             return
@@ -247,6 +253,7 @@ def build_worker(
         queue_list=queue_list,
         task_factory=task_factory,
         max_jobs=max_jobs,
+        on_task_process_exception=worker_settings.on_task_process_exception,
     )
 
     return worker

@@ -1,5 +1,6 @@
 import asyncio
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
@@ -330,7 +331,9 @@ async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Qu
         queue_namespace = task_queue.namespace
         factory_kwargs = {"handlers": {}}
 
-    scheduled_task = await task_queue.add_task({"function": "job", "kwargs": {}}, task_timeout=0)
+    scheduled_task = await task_queue.add_task(
+        {"function": "job", "kwargs": {}}, task_timeout=0
+    )
     await task_queue.get_task()
 
     freezer.tick(10)
@@ -340,3 +343,79 @@ async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Qu
 
     task = await task_queue.check_task(scheduled_task.id)
     assert task.state == TaskState.BURIED
+
+
+@pytest.mark.asyncio
+async def test_worker_on_task_process_exception(redis_connection, task_queue: Queue):
+    exception_handler = Mock()
+
+    class Job(SimpleJob):
+        async def run(self, **kwargs) -> Any:
+            raise ValueError
+
+    class Settings(WorkerSettings):
+        @classmethod
+        async def redis_connection(cls):
+            return redis_connection
+
+        @staticmethod
+        async def on_task_process_exception(exc_info):
+            exception_handler()
+
+        queue_namespace = task_queue.namespace
+        factory_kwargs = {"handlers": {"job": Job}}
+
+    worker = build_worker(redis_connection, Settings, [task_queue.name])
+
+    run_coro = worker.run()
+    run_task = asyncio.create_task(run_coro)
+    await asyncio.wait_for(worker.started.wait(), timeout=1)
+
+    scheduled_task = await task_queue.add_task({"function": "job", "kwargs": {}})
+    await asyncio.wait_for(worker.got_task.wait(), timeout=1)
+
+    await worker.stop()
+    await asyncio.wait_for(run_task, timeout=1)
+    assert not run_task.exception()
+
+    exception_handler.assert_called_once()
+
+    task = await task_queue.check_task(scheduled_task.id)
+    assert task.state == TaskState.FAILED
+    assert len(worker._job_handlers) == 0
+
+
+@pytest.mark.asyncio
+async def test_worker_on_task_process_exception_failure(redis_connection, task_queue: Queue):
+    class Job(SimpleJob):
+        async def run(self, **kwargs) -> Any:
+            raise ValueError
+
+    class Settings(WorkerSettings):
+        @classmethod
+        async def redis_connection(cls):
+            return redis_connection
+
+        @staticmethod
+        async def on_task_process_exception(exc_info):
+            raise Exception("FAIL")
+
+        queue_namespace = task_queue.namespace
+        factory_kwargs = {"handlers": {"job": Job}}
+
+    worker = build_worker(redis_connection, Settings, [task_queue.name])
+
+    run_coro = worker.run()
+    run_task = asyncio.create_task(run_coro)
+    await asyncio.wait_for(worker.started.wait(), timeout=1)
+
+    scheduled_task = await task_queue.add_task({"function": "job", "kwargs": {}})
+    await asyncio.wait_for(worker.got_task.wait(), timeout=1)
+
+    await worker.stop()
+    await asyncio.wait_for(run_task, timeout=1)
+    assert not run_task.exception()
+
+    task = await task_queue.check_task(scheduled_task.id)
+    assert task.state == TaskState.FAILED
+    assert len(worker._job_handlers) == 0
