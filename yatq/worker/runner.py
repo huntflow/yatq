@@ -125,7 +125,8 @@ class Worker:
             return
 
         try:
-            coro = task_job.process()
+            # Wrapping coroutine in asyncio.task to copy contextvars
+            process_task = asyncio.create_task(task_job.process())
         except Exception:
             LOGGER.exception("Failed to create job coroutine")
             await queue.fail_task(wrapper)
@@ -133,7 +134,8 @@ class Worker:
 
         LOGGER.info("Starting job")
         try:
-            await coro
+            await process_task
+            process_task.result()
         except Exception:
             LOGGER.exception("Exception in job")
             wrapper.task.result = {"traceback": traceback.format_exc()}
