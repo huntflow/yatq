@@ -3,6 +3,7 @@ from typing import Dict, Optional, Tuple, Type
 
 import aioredis
 
+from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.factory.simple import SimpleJobFactory
 from yatq.worker.job.base import BaseJob
 
@@ -11,7 +12,7 @@ T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
 
 class WorkerSettings:
 
-    factory_cls: Type[SimpleJobFactory] = SimpleJobFactory
+    factory_cls: Type[BaseJobFactory] = SimpleJobFactory
     factory_kwargs: Optional[Dict] = None
 
     queue_namespace: Optional[str] = None

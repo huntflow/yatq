@@ -14,7 +14,9 @@ class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJobClass]):
     def __init__(
         self,
         handlers: Dict[str, Type[T_SimpleJobClass]],
+        **kwargs,
     ):
+        super().__init__(**kwargs)
         self.handlers = handlers
 
     def create_job(self, task: "Task") -> T_SimpleJobClass:

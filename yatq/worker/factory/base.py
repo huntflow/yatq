@@ -8,6 +8,9 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class BaseJobFactory(ABC):
+    def __init__(self, **kwargs):
+        super().__init__()
+
     @abstractmethod
     def create_job(self, task: "Task") -> BaseJob:  # pragma: no cover
         ...
