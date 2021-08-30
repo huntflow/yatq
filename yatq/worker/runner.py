@@ -12,6 +12,7 @@ from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
+from yatq.worker.job.base import BaseJob
 from yatq.worker.worker_settings import T_ExcInfo, WorkerSettings
 
 LOGGER = logging.getLogger("yatq.worker")
@@ -24,7 +25,7 @@ class Worker:
         self,
         queue_list: List[Queue],
         task_factory: BaseJobFactory,
-        on_task_process_exception: Callable[[T_ExcInfo], Awaitable],
+        on_task_process_exception: Callable[[BaseJob, T_ExcInfo], Awaitable],
         poll_interval: float = 2.0,
         max_jobs: int = 8,
         gravekeeper_interval: float = 30.0,
@@ -142,7 +143,7 @@ class Worker:
 
             exc_info = cast(T_ExcInfo, sys.exc_info())
             try:
-                await self._on_task_process_exception(exc_info)
+                await self._on_task_process_exception(task_job, exc_info)
             except Exception:
                 LOGGER.exception("Exception in exception handler")
 

@@ -24,12 +24,12 @@ def test_simple_job_creation():
     task_a = Task(
         "test",
         timeout=0,
-        encoded_data=json.dumps({"kwargs": {"test": 1}, "function": "job_a"}),
+        encoded_data=json.dumps({"kwargs": {"test": 1}, "name": "job_a"}),
     )
     task_b = Task(
         "test",
         timeout=0,
-        encoded_data=json.dumps({"kwargs": {"test": 1}, "function": "job_b"}),
+        encoded_data=json.dumps({"kwargs": {"test": 1}, "name": "job_b"}),
     )
 
     factory = SimpleJobFactory(handlers=handlers)
@@ -45,7 +45,7 @@ def test_missing_key_job_creation():
     task = Task(
         "test",
         timeout=0,
-        encoded_data=json.dumps({"kwargs": {"test": 1}, "function": "job"}),
+        encoded_data=json.dumps({"kwargs": {"test": 1}, "name": "job"}),
     )
     factory = SimpleJobFactory(handlers={})
 

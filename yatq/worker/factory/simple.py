@@ -22,7 +22,7 @@ class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJobClass]):
         if not task_data:
             raise ValueError("Task data is not set")
 
-        task_function = task_data["function"]
+        task_function = task_data["name"]
         handler_class = self.handlers[task_function]
 
         return handler_class(task)
