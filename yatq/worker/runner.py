@@ -26,6 +26,7 @@ class Worker:
         queue_list: List[Queue],
         task_factory: BaseJobFactory,
         on_task_process_exception: Callable[[BaseJob, T_ExcInfo], Awaitable],
+        # It's better to add the parameters to cli args
         poll_interval: float = 2.0,
         max_jobs: int = 8,
         gravekeeper_interval: float = 30.0,
@@ -34,6 +35,7 @@ class Worker:
         self.task_factory = task_factory
 
         self.started = asyncio.Event()
+        # What is the purpose of these events?
         self.got_task = asyncio.Event()
         self.completed_task = asyncio.Event()
 
@@ -118,34 +120,46 @@ class Worker:
         self.completed_task.set()
 
     async def _handle_task(self, wrapper, queue) -> None:
+        task_id = wrapper.task.id
         try:
             task_job = self.task_factory.create_job(wrapper.task)
         except Exception:
-            LOGGER.exception("Failed to create job")
+            LOGGER.exception(
+                "Failed to create job for task %s (%s-%s)",
+                wrapper.task.data,
+                task_id,
+                wrapper.key,
+            )
             await queue.fail_task(wrapper)
             return
+
+        job_name = task_job.__class__.__name__
 
         try:
             # Wrapping coroutine in asyncio.task to copy contextvars
             process_task = asyncio.create_task(task_job.process())
         except Exception:
-            LOGGER.exception("Failed to create job coroutine")
+            LOGGER.exception("Failed to create job '%s' (%s) coroutine", job_name, task_id)
             await queue.fail_task(wrapper)
             return
 
-        LOGGER.info("Starting job")
+        LOGGER.info("Starting job '%s' (%s)", job_name, wrapper.task.id)
         try:
             await process_task
             process_task.result()
         except Exception:
-            LOGGER.exception("Exception in job")
+            LOGGER.exception("Exception in job '%s' (%s)", job_name, task_id)
             wrapper.task.result = {"traceback": traceback.format_exc()}
 
             exc_info = cast(T_ExcInfo, sys.exc_info())
             try:
                 await self._on_task_process_exception(task_job, exc_info)
             except Exception:
-                LOGGER.exception("Exception in exception handler")
+                LOGGER.exception(
+                    "Exception in exception handler for job '%s' (%s)",
+                    job_name,
+                    task_id,
+                )
 
             await self._try_reschedule_task(wrapper, queue)
             return
@@ -156,10 +170,16 @@ class Worker:
         try:
             await task_job.do_post_process()
         except Exception:
-            LOGGER.exception("Exception in job post processing")
+            LOGGER.exception(
+                "Exception in job '%s' (%s) post processing",
+                job_name,
+                task_id,
+            )
 
         LOGGER.info(
-            "Finished job after %s seconds (%s seconds postprocessing) with state %s",
+            "Finished job '%s' (%s) after %s seconds (%s seconds postprocessing) with state %s",
+            job_name,
+            task_id,
             task_job.process_duration,
             task_job.post_process_duration,
             wrapper.task.state.value,
@@ -189,6 +209,7 @@ class Worker:
 
         LOGGER.info("Waiting for %s running job(s) to finish", len(self._job_handlers))
         await asyncio.wait(self._job_handlers, return_when=asyncio.ALL_COMPLETED)
+        LOGGER.info("All jobs are completed.")
 
     async def stop(self) -> None:
         LOGGER.info("Stopping worker")
@@ -219,6 +240,7 @@ class Worker:
         gravekeeper_task.cancel()
 
 
+# move it to defaults
 DEFAULT_LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -231,6 +253,8 @@ DEFAULT_LOGGING_CONFIG = {
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
+
+# move it to defaults
 DEFAULT_MAX_JOBS = 8
 
 
@@ -238,9 +262,8 @@ def build_worker(
     redis_client: aioredis.Redis,
     worker_settings: Type[WorkerSettings],
     queue_names: List[str],
-    max_jobs: Optional[int] = None,
+    max_jobs: Optional[int] = DEFAULT_MAX_JOBS,
 ) -> Worker:
-    max_jobs = max_jobs or DEFAULT_MAX_JOBS
     factory_kwargs = worker_settings.factory_kwargs or {}
     task_factory = worker_settings.factory_cls(**factory_kwargs)
 

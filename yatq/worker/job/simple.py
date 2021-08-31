@@ -9,6 +9,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class SimpleJob(BaseJob):
+    # Docstring? why do we need the class?
     def __init__(self, task: "Task") -> None:
         super().__init__(task)
 
@@ -27,6 +28,7 @@ class SimpleJob(BaseJob):
 
         return formatted_result
 
+    # Why it is redifined here? Along with `run` and `postprocess`
     async def process(self) -> None:
         async with self.run_context(), self.run_timer():
             result = await self.run(**self.kwargs)

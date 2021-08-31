@@ -61,6 +61,7 @@ class Queue:
         logger: Optional[logging.Logger] = None,
     ):
         self.client = client
+        # What's the goal? Just forbid ':' in names and namespaces with assert
         self.name = name.replace(":", "_")
         self.namespace = namespace.replace(":", "_")
 
@@ -72,6 +73,8 @@ class Queue:
         self._reschedule_function = LuaFunction(reschedule_template, self.environment)
         self._bury_function = LuaFunction(bury_template, self.environment)
 
+    # All the *_key properties may be turned out into object's attributes, just
+    # initialize it in __init__
     @property
     def _key_prefix(self) -> str:
         return f"{self.namespace}:{self.name}"

@@ -10,6 +10,7 @@ if TYPE_CHECKING:  # pragma: no cover
 T_SimpleJobClass = TypeVar("T_SimpleJobClass", bound=SimpleJob)
 
 
+# Why the multi-inheritance is needed here?
 class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJobClass]):
     def __init__(
         self,

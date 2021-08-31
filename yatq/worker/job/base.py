@@ -47,6 +47,8 @@ class BaseJob(ABC):
             await self.post_process()
 
     @asynccontextmanager
+    # AsyncIterator? Also why it is in *async* contextmanager? There are no
+    # async things (the same is for `post_process_timer`, `run_context`)
     async def run_timer(self) -> AsyncIterator[None]:
         self.run_start = time()
         try:
@@ -55,6 +57,7 @@ class BaseJob(ABC):
             self.run_stop = time()
 
     @asynccontextmanager
+    # AsyncIterator?
     async def post_process_timer(self) -> AsyncIterator[None]:
         self.post_process_start = time()
         try:
@@ -62,6 +65,7 @@ class BaseJob(ABC):
         finally:
             self.post_process_stop = time()
 
+    # what is it?
     @asynccontextmanager
     async def run_context(self) -> AsyncIterator[None]:
         yield

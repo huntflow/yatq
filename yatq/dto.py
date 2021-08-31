@@ -39,9 +39,9 @@ class Task:
     Note on keys and ids:
     Task ID represents unique task invocation, while task key is designed to be
     unique for task's *purpose*. For instance, multiple tasks are scheduled to reindex
-    data of same database model. Thus, they key should be equal - for example, "reindex-1".
+    data of same database model. Thus, that keys should be equal - for example, "reindex-1".
     If one task in schedule while another is already PENDING or PROCESSING, queue will reject it
-    and instead return ID of existing task. On the other hand, if task execution does not overlap,
+    and instead return ID of the existing task. On the other hand, if task execution does not overlap,
     each unique invocation data is stored, identified by task ID.
 
     Task timeout is used to calculate task's deadline after its transition to PROCESSING state.
