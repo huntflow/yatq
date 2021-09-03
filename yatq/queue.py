@@ -60,10 +60,12 @@ class Queue:
         bury_template: str = BURY_TEMPLATE,
         logger: Optional[logging.Logger] = None,
     ):
+        assert ":" not in name, "Name should not contain ':'"
+        assert ":" not in namespace, "Namespace should not contain ':'"
+
         self.client = client
-        # What's the goal? Just forbid ':' in names and namespaces with assert
-        self.name = name.replace(":", "_")
-        self.namespace = namespace.replace(":", "_")
+        self.name = name
+        self.namespace = namespace
 
         self.logger = logger or LOGGER
 
