@@ -6,7 +6,11 @@ from typing import Awaitable, Callable, List, Optional, Set, Type, cast
 
 import aioredis
 
-from yatq.defaults import DEFAULT_QUEUE_NAMESPACE
+from yatq.defaults import (
+    DEFAULT_LOGGING_CONFIG,
+    DEFAULT_MAX_JOBS,
+    DEFAULT_QUEUE_NAMESPACE,
+)
 from yatq.dto import TaskWrapper
 from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
@@ -34,8 +38,9 @@ class Worker:
         self.queue_list = queue_list
         self.task_factory = task_factory
 
+        # NOTE: events are currently only used for testing.
+        # Do not rely on them in production code.
         self.started = asyncio.Event()
-        # What is the purpose of these events?
         self.got_task = asyncio.Event()
         self.completed_task = asyncio.Event()
 
@@ -240,24 +245,6 @@ class Worker:
 
         periodic_poll_task.cancel()
         gravekeeper_task.cancel()
-
-
-# move it to defaults
-DEFAULT_LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "level": "INFO",
-        },
-    },
-    "root": {"level": "INFO", "handlers": ["console"]},
-}
-
-
-# move it to defaults
-DEFAULT_MAX_JOBS = 8
 
 
 def build_worker(
