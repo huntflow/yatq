@@ -57,7 +57,6 @@ class BaseJob(ABC):
             self.run_stop = time()
 
     @asynccontextmanager
-    # AsyncIterator?
     async def post_process_timer(self) -> AsyncIterator[None]:
         self.post_process_start = time()
         try:
@@ -65,7 +64,6 @@ class BaseJob(ABC):
         finally:
             self.post_process_stop = time()
 
-    # what is it?
     @asynccontextmanager
     async def run_context(self) -> AsyncIterator[None]:
         yield
