@@ -10,14 +10,16 @@ from yatq.worker.job.base import BaseJob
 T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
 
 
-# The whole concept with the settings class looks a little bit ugly
-# I suggest the following.
-# Define default settings class here (without factory_kwargs)
-# Use the default class explicitely in cli module.
-# Define and use (with a straightforward import) whatever needed settings
-# class in client code (client of the yatq lib).
-# Drop `utils` module.
 class WorkerSettings:
+
+    """
+    WorkerSettings class is used to configure worker.
+
+    If you are using yatq-worker command line utility, you should
+    implement custom config by inheriting this class and implementing
+    `redis_client` method, along with setting `factory_kwargs` and/or
+    custom `factory_cls`.
+    """
 
     factory_cls: Type[BaseJobFactory] = SimpleJobFactory
     factory_kwargs: Optional[Dict] = None
