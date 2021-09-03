@@ -264,8 +264,9 @@ def build_worker(
     redis_client: aioredis.Redis,
     worker_settings: Type[WorkerSettings],
     queue_names: List[str],
-    max_jobs: Optional[int] = DEFAULT_MAX_JOBS,
+    max_jobs: Optional[int] = None,
 ) -> Worker:
+    max_jobs = max_jobs or DEFAULT_MAX_JOBS
     factory_kwargs = worker_settings.factory_kwargs or {}
     task_factory = worker_settings.factory_cls(**factory_kwargs)
 
