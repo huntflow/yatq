@@ -9,7 +9,12 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class SimpleJob(BaseJob):
-    # Docstring? why do we need the class?
+
+    """
+    Simple job class implementation. It takes `kwargs` from task data
+    and passes them to `run` and `post_process`.
+    """
+
     def __init__(self, task: "Task") -> None:
         super().__init__(task)
 
@@ -28,7 +33,6 @@ class SimpleJob(BaseJob):
 
         return formatted_result
 
-    # Why it is redifined here? Along with `run` and `postprocess`
     async def process(self) -> None:
         async with self.run_context():
             with self.run_timer():

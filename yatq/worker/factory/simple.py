@@ -11,6 +11,12 @@ T_SimpleJobClass = TypeVar("T_SimpleJobClass", bound=SimpleJob)
 
 
 class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJobClass]):
+
+    """
+    Simple job factory implementation. Job class is chosen from
+    `handlers` mapping using `name` key from task data.
+    """
+
     def __init__(
         self,
         handlers: Dict[str, Type[T_SimpleJobClass]],
