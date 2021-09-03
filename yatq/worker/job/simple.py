@@ -30,12 +30,13 @@ class SimpleJob(BaseJob):
 
     # Why it is redifined here? Along with `run` and `postprocess`
     async def process(self) -> None:
-        async with self.run_context(), self.run_timer():
-            result = await self.run(**self.kwargs)
-            self.task.result = self.format_result(result)
+        async with self.run_context():
+            with self.run_timer():
+                result = await self.run(**self.kwargs)
+                self.task.result = self.format_result(result)
 
     async def do_post_process(self) -> None:
-        async with self.post_process_timer():
+        with self.post_process_timer():
             await self.post_process(**self.kwargs)
 
     @abstractmethod

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from time import time
-from typing import TYPE_CHECKING, Any, AsyncIterator, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator, Optional
 
 if TYPE_CHECKING:  # pragma: no cover
     from yatq.dto import Task
@@ -38,26 +38,27 @@ class BaseJob(ABC):
         return str(result)
 
     async def process(self) -> None:
-        async with self.run_context(), self.run_timer():
-            result = await self.run()
-            self.task.result = self.format_result(result)
+        async with self.run_context():
+            with self.run_timer():
+                result = await self.run()
+                self.task.result = self.format_result(result)
 
     async def do_post_process(self) -> None:
-        async with self.post_process_timer():
+        with self.post_process_timer():
             await self.post_process()
 
-    @asynccontextmanager
-    # AsyncIterator? Also why it is in *async* contextmanager? There are no
-    # async things (the same is for `post_process_timer`, `run_context`)
-    async def run_timer(self) -> AsyncIterator[None]:
+    # NOTE: mypy sees context managers as iterators. Thus, weird annotations
+
+    @contextmanager
+    def run_timer(self) -> Iterator[None]:
         self.run_start = time()
         try:
             yield
         finally:
             self.run_stop = time()
 
-    @asynccontextmanager
-    async def post_process_timer(self) -> AsyncIterator[None]:
+    @contextmanager
+    def post_process_timer(self) -> Iterator[None]:
         self.post_process_start = time()
         try:
             yield

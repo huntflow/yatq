@@ -139,7 +139,9 @@ class Worker:
             # Wrapping coroutine in asyncio.task to copy contextvars
             process_task = asyncio.create_task(task_job.process())
         except Exception:
-            LOGGER.exception("Failed to create job '%s' (%s) coroutine", job_name, task_id)
+            LOGGER.exception(
+                "Failed to create job '%s' (%s) coroutine", job_name, task_id
+            )
             await queue.fail_task(wrapper)
             return
 
