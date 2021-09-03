@@ -2,7 +2,7 @@ import asyncio
 import logging.config
 import sys
 import traceback
-from typing import Awaitable, Callable, List, Optional, Set, Type, cast
+from typing import Awaitable, Callable, Dict, List, Optional, Set, Type, cast
 
 import aioredis
 
@@ -17,7 +17,7 @@ from yatq.exceptions import TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.job.simple import BaseJob
-from yatq.worker.worker_settings import T_ExcInfo, WorkerSettings
+from yatq.worker.worker_settings import T_ExceptionHandler, T_ExcInfo
 
 LOGGER = logging.getLogger("yatq.worker")
 LOGGER.setLevel("INFO")
@@ -29,8 +29,7 @@ class Worker:
         self,
         queue_list: List[Queue],
         task_factory: BaseJobFactory,
-        on_task_process_exception: Callable[[BaseJob, T_ExcInfo], Awaitable],
-        # It's better to add the parameters to cli args
+        on_task_process_exception: Optional[T_ExceptionHandler] = None,
         poll_interval: float = 2.0,
         max_jobs: int = 8,
         gravekeeper_interval: float = 30.0,
@@ -160,7 +159,8 @@ class Worker:
 
             exc_info = cast(T_ExcInfo, sys.exc_info())
             try:
-                await self._on_task_process_exception(task_job, exc_info)
+                if self._on_task_process_exception:
+                    await self._on_task_process_exception(task_job, exc_info)
             except Exception:
                 LOGGER.exception(
                     "Exception in exception handler for job '%s' (%s)",
@@ -249,19 +249,24 @@ class Worker:
 
 def build_worker(
     redis_client: aioredis.Redis,
-    worker_settings: Type[WorkerSettings],
+    factory_cls: Type[BaseJobFactory],
+    factory_kwargs: Optional[Dict],
     queue_names: List[str],
+    queue_namespace: Optional[str] = None,
     max_jobs: Optional[int] = None,
+    on_task_process_exception: Optional[T_ExceptionHandler] = None,
 ) -> Worker:
+    factory_kwargs = factory_kwargs or {}
+    task_factory = factory_cls(**factory_kwargs)
+
+    queue_namespace = queue_namespace or DEFAULT_QUEUE_NAMESPACE
     max_jobs = max_jobs or DEFAULT_MAX_JOBS
-    factory_kwargs = worker_settings.factory_kwargs or {}
-    task_factory = worker_settings.factory_cls(**factory_kwargs)
 
     queue_list: List[Queue] = [
         Queue(
             client=redis_client,
             name=queue_name,
-            namespace=worker_settings.queue_namespace or DEFAULT_QUEUE_NAMESPACE,
+            namespace=queue_namespace,
         )
         for queue_name in queue_names
     ]
@@ -269,7 +274,7 @@ def build_worker(
         queue_list=queue_list,
         task_factory=task_factory,
         max_jobs=max_jobs,
-        on_task_process_exception=worker_settings.on_task_process_exception,
+        on_task_process_exception=on_task_process_exception,
     )
 
     return worker

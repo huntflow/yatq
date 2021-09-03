@@ -6,6 +6,7 @@ import pytest
 
 from yatq.enums import RetryPolicy, TaskState
 from yatq.queue import Queue
+from yatq.worker.factory.simple import SimpleJobFactory
 from yatq.worker.job.simple import SimpleJob
 from yatq.worker.runner import build_worker
 from yatq.worker.worker_settings import WorkerSettings
@@ -19,15 +20,13 @@ async def test_worker_start_stop(redis_connection, task_queue: Queue):
         async def run(self, **kwargs) -> Any:
             event.set()
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -56,14 +55,12 @@ async def test_worker_start_stop_default_namespace(
         async def run(self, **kwargs) -> Any:
             event.set()
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -89,15 +86,13 @@ async def test_worker_start_stop_clean_exit(redis_connection, task_queue: Queue)
         async def run(self, **kwargs) -> Any:
             event.set()
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -122,15 +117,14 @@ async def test_worker_multiple_pending_tasks(redis_connection, task_queue: Queue
         async def run(self, **kwargs) -> Any:
             pass
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name], max_jobs=1)
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        max_jobs=1,
+        queue_namespace=task_queue.namespace,
+    )
 
     scheduled_task_1 = await task_queue.add_task({"name": "job", "kwargs": {}})
     scheduled_task_2 = await task_queue.add_task({"name": "job", "kwargs": {}})
@@ -157,15 +151,13 @@ async def test_worker_multiple_pending_tasks(redis_connection, task_queue: Queue
 
 @pytest.mark.asyncio
 async def test_worker_job_creation_failed(redis_connection, task_queue: Queue):
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -194,15 +186,13 @@ async def test_worker_job_coroutine_creation_failed(
         async def run(self, **kwargs) -> Any:
             pass
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -226,15 +216,13 @@ async def test_worker_job_run_failed(redis_connection, task_queue: Queue):
         async def run(self, **kwargs) -> Any:
             raise ValueError
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -261,15 +249,13 @@ async def test_worker_job_post_process_failed(redis_connection, task_queue: Queu
         async def post_process(self, **kwargs) -> None:
             raise ValueError()
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -293,15 +279,13 @@ async def test_worker_job_run_failed_requeued(redis_connection, task_queue: Queu
         async def run(self, **kwargs) -> Any:
             raise ValueError
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -323,14 +307,6 @@ async def test_worker_job_run_failed_requeued(redis_connection, task_queue: Queu
 
 @pytest.mark.asyncio
 async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Queue):
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {}}
-
     scheduled_task = await task_queue.add_task(
         {"name": "job", "kwargs": {}}, task_timeout=0
     )
@@ -338,7 +314,13 @@ async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Qu
 
     freezer.tick(10)
 
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
     await worker._call_gravekeeper()
 
     task = await task_queue.check_task(scheduled_task.id)
@@ -353,19 +335,17 @@ async def test_worker_on_task_process_exception(redis_connection, task_queue: Qu
         async def run(self, **kwargs) -> Any:
             raise ValueError
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
+    async def on_task_process_exception(job, exc_info):
+        exception_handler()
 
-        @staticmethod
-        async def on_task_process_exception(job, exc_info):
-            exception_handler()
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+        on_task_process_exception=on_task_process_exception,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -393,19 +373,17 @@ async def test_worker_on_task_process_exception_failure(
         async def run(self, **kwargs) -> Any:
             raise ValueError
 
-    class Settings(WorkerSettings):
-        @classmethod
-        async def redis_connection(cls):
-            return redis_connection
+    async def on_task_process_exception(exc_info):
+        raise Exception("FAIL")
 
-        @staticmethod
-        async def on_task_process_exception(exc_info):
-            raise Exception("FAIL")
-
-        queue_namespace = task_queue.namespace
-        factory_kwargs = {"handlers": {"job": Job}}
-
-    worker = build_worker(redis_connection, Settings, [task_queue.name])
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+        on_task_process_exception=on_task_process_exception,
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)

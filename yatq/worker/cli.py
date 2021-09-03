@@ -58,7 +58,13 @@ def run(
     try:
         redis_client = loop.run_until_complete(worker_settings.redis_client())
         worker = build_worker(
-            redis_client, worker_settings, queue_names, max_jobs=max_jobs
+            redis_client,
+            worker_settings.factory_cls,
+            worker_settings.factory_kwargs,
+            queue_names,
+            max_jobs=max_jobs,
+            queue_namespace=worker_settings.queue_namespace,
+            on_task_process_exception=worker_settings.on_task_process_exception,
         )
 
         stop_signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)

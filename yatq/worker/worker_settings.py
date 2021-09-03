@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Dict, Optional, Tuple, Type
+from typing import Awaitable, Callable, Dict, Optional, Tuple, Type
 
 import aioredis
 
@@ -8,6 +8,7 @@ from yatq.worker.factory.simple import SimpleJobFactory
 from yatq.worker.job.base import BaseJob
 
 T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
+T_ExceptionHandler = Callable[[BaseJob, T_ExcInfo], Awaitable]
 
 
 class WorkerSettings:
