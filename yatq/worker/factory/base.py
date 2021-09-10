@@ -4,8 +4,7 @@ from typing import Generic, TypeVar
 from yatq.dto import Task
 from yatq.worker.job.base import BaseJob
 
-
-T_BaseJob = TypeVar('T_BaseJob', bound=BaseJob)
+T_BaseJob = TypeVar("T_BaseJob", bound=BaseJob)
 
 
 class BaseJobFactory(ABC, Generic[T_BaseJob]):

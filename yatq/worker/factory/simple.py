@@ -1,7 +1,7 @@
 from typing import Dict, Type
 
-from yatq.worker.factory.base import BaseJobFactory
 from yatq.dto import Task
+from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.job.simple import SimpleJob
 
 
