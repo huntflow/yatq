@@ -1,16 +1,11 @@
-from typing import TYPE_CHECKING, Dict, Generic, Type, TypeVar, cast
+from typing import Dict, Type
 
 from yatq.worker.factory.base import BaseJobFactory
-
-if TYPE_CHECKING:  # pragma: no cover
-    from yatq.dto import Task
-    from yatq.worker.job.simple import SimpleJob
+from yatq.dto import Task
+from yatq.worker.job.simple import SimpleJob
 
 
-T_SimpleJob = TypeVar("T_SimpleJob", bound="SimpleJob")
-
-
-class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJob]):
+class SimpleJobFactory(BaseJobFactory[SimpleJob]):
 
     """
     Simple job factory implementation. Job class is chosen from
@@ -19,13 +14,13 @@ class SimpleJobFactory(BaseJobFactory, Generic[T_SimpleJob]):
 
     def __init__(
         self,
-        handlers: Dict[str, Type[T_SimpleJob]],
+        handlers: Dict[str, Type[SimpleJob]],
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.handlers = handlers
 
-    def create_job(self, task: "Task") -> T_SimpleJob:
+    def create_job(self, task: Task) -> SimpleJob:
         task_data = task.data
         if not task_data:
             raise ValueError("Task data is not set")
