@@ -3,8 +3,9 @@ from typing import Any
 
 def import_string(dotted_path: str) -> Any:
     """
-    Stolen from pydantic. Import a dotted module path and return the attribute/class designated by the
-    last name in the path. Raise ImportError if the import fails.
+    Stolen from pydantic. Import a dotted module path and return the
+    attribute/class designated by the last name in the path.
+    Raise ImportError if the import fails.
     """
     from importlib import import_module
 

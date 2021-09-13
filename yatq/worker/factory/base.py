@@ -1,16 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import Generic, TypeVar
 
+from yatq.dto import Task
 from yatq.worker.job.base import BaseJob
 
-if TYPE_CHECKING:  # pragma: no cover
-    from yatq.dto import Task
+T_BaseJob = TypeVar("T_BaseJob", bound=BaseJob)
 
 
-class BaseJobFactory(ABC):
+class BaseJobFactory(ABC, Generic[T_BaseJob]):
     def __init__(self, **kwargs):
         super().__init__()
 
     @abstractmethod
-    def create_job(self, task: "Task") -> BaseJob:  # pragma: no cover
+    def create_job(self, task: Task) -> T_BaseJob:
         ...

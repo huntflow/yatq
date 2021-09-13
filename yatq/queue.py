@@ -60,73 +60,29 @@ class Queue:
         bury_template: str = BURY_TEMPLATE,
         logger: Optional[logging.Logger] = None,
     ):
+        assert ":" not in name, "Name should not contain ':'"
+        assert ":" not in namespace, "Namespace should not contain ':'"
+
         self.client = client
-        self.name = name.replace(":", "_")
-        self.namespace = namespace.replace(":", "_")
+        self.name = name
+        self.namespace = namespace
 
         self.logger = logger or LOGGER
 
-        self._add_function = LuaFunction(add_template, self.environment)
-        self._get_function = LuaFunction(get_template, self.environment)
-        self._complete_function = LuaFunction(complete_template, self.environment)
-        self._reschedule_function = LuaFunction(reschedule_template, self.environment)
-        self._bury_function = LuaFunction(bury_template, self.environment)
-
-    @property
-    def _key_prefix(self) -> str:
-        return f"{self.namespace}:{self.name}"
-
-    @property
-    def event_channel_name(self) -> str:
-        return f"{self._key_prefix}:events"
-
-    @property
-    def processing_set_name(self) -> str:
-        return f"{self._key_prefix}:processing"
-
-    @property
-    def pending_set_name(self) -> str:
-        return f"{self._key_prefix}:pending"
-
-    @property
-    def mapping_key_name(self) -> str:
-        return f"{self._key_prefix}:key_id_map"
-
-    @property
-    def task_key_prefix(self) -> str:
-        return f"{self._key_prefix}:task"
-
-    @property
-    def metrics_added_key(self) -> str:
-        return f"{self._key_prefix}:metrics:added"
-
-    @property
-    def metrics_taken_key(self) -> str:
-        return f"{self._key_prefix}:metrics:taken"
-
-    @property
-    def metrics_requeued_key(self) -> str:
-        return f"{self._key_prefix}:metrics:requeued"
-
-    @property
-    def metrics_completed_key(self) -> str:
-        return f"{self._key_prefix}:metrics:completed"
-
-    @property
-    def metrics_resurrected_key(self) -> str:
-        return f"{self._key_prefix}:metrics:resurrected"
-
-    @property
-    def metrics_buried_key(self) -> str:
-        return f"{self._key_prefix}:metrics:buried"
-
-    @property
-    def metrics_broken_key(self) -> str:
-        return f"{self._key_prefix}:metrics:broken"
-
-    @property
-    def environment(self) -> Dict[str, Any]:
-        return {
+        self._key_prefix = f"{self.namespace}:{self.name}"
+        self.event_channel_name = f"{self._key_prefix}:events"
+        self.processing_set_name = f"{self._key_prefix}:processing"
+        self.pending_set_name = f"{self._key_prefix}:pending"
+        self.mapping_key_name = f"{self._key_prefix}:key_id_map"
+        self.task_key_prefix = f"{self._key_prefix}:task"
+        self.metrics_added_key = f"{self._key_prefix}:metrics:added"
+        self.metrics_taken_key = f"{self._key_prefix}:metrics:taken"
+        self.metrics_requeued_key = f"{self._key_prefix}:metrics:requeued"
+        self.metrics_completed_key = f"{self._key_prefix}:metrics:completed"
+        self.metrics_resurrected_key = f"{self._key_prefix}:metrics:resurrected"
+        self.metrics_buried_key = f"{self._key_prefix}:metrics:buried"
+        self.metrics_broken_key = f"{self._key_prefix}:metrics:broken"
+        self.environment = {
             "processing_key": self.processing_set_name,
             "pending_key": self.pending_set_name,
             "task_mapping_key": self.mapping_key_name,
@@ -142,6 +98,12 @@ class Queue:
             "default_timeout": DEFAULT_TIMEOUT,
             "default_task_expiration": DEFAULT_TASK_EXPIRATION,
         }
+
+        self._add_function = LuaFunction(add_template, self.environment)
+        self._get_function = LuaFunction(get_template, self.environment)
+        self._complete_function = LuaFunction(complete_template, self.environment)
+        self._reschedule_function = LuaFunction(reschedule_template, self.environment)
+        self._bury_function = LuaFunction(bury_template, self.environment)
 
     async def add_task(
         self,

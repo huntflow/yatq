@@ -2,18 +2,22 @@ import asyncio
 import logging.config
 import sys
 import traceback
-from typing import Awaitable, Callable, List, Optional, Set, Type, cast
+from typing import Awaitable, Callable, Dict, List, Optional, Set, Type, cast
 
 import aioredis
 
-from yatq.defaults import DEFAULT_QUEUE_NAMESPACE
+from yatq.defaults import (
+    DEFAULT_LOGGING_CONFIG,
+    DEFAULT_MAX_JOBS,
+    DEFAULT_QUEUE_NAMESPACE,
+)
 from yatq.dto import TaskWrapper
 from yatq.enums import TaskState
 from yatq.exceptions import TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.job.simple import BaseJob
-from yatq.worker.worker_settings import T_ExcInfo, WorkerSettings
+from yatq.worker.worker_settings import T_ExceptionHandler, T_ExcInfo
 
 LOGGER = logging.getLogger("yatq.worker")
 LOGGER.setLevel("INFO")
@@ -25,7 +29,7 @@ class Worker:
         self,
         queue_list: List[Queue],
         task_factory: BaseJobFactory,
-        on_task_process_exception: Callable[[BaseJob, T_ExcInfo], Awaitable],
+        on_task_process_exception: Optional[T_ExceptionHandler] = None,
         poll_interval: float = 2.0,
         max_jobs: int = 8,
         gravekeeper_interval: float = 30.0,
@@ -33,6 +37,8 @@ class Worker:
         self.queue_list = queue_list
         self.task_factory = task_factory
 
+        # NOTE: events are currently only used for testing.
+        # Do not rely on them in production code.
         self.started = asyncio.Event()
         self.got_task = asyncio.Event()
         self.completed_task = asyncio.Event()
@@ -118,34 +124,49 @@ class Worker:
         self.completed_task.set()
 
     async def _handle_task(self, wrapper, queue) -> None:
+        task_id = wrapper.task.id
         try:
             task_job = self.task_factory.create_job(wrapper.task)
         except Exception:
-            LOGGER.exception("Failed to create job")
+            LOGGER.exception(
+                "Failed to create job for task %s (%s-%s)",
+                wrapper.task.data,
+                task_id,
+                wrapper.key,
+            )
             await queue.fail_task(wrapper)
             return
+
+        job_name = task_job.__class__.__name__
 
         try:
             # Wrapping coroutine in asyncio.task to copy contextvars
             process_task = asyncio.create_task(task_job.process())
         except Exception:
-            LOGGER.exception("Failed to create job coroutine")
+            LOGGER.exception(
+                "Failed to create job '%s' (%s) coroutine", job_name, task_id
+            )
             await queue.fail_task(wrapper)
             return
 
-        LOGGER.info("Starting job")
+        LOGGER.info("Starting job '%s' (%s)", job_name, wrapper.task.id)
         try:
             await process_task
             process_task.result()
         except Exception:
-            LOGGER.exception("Exception in job")
+            LOGGER.exception("Exception in job '%s' (%s)", job_name, task_id)
             wrapper.task.result = {"traceback": traceback.format_exc()}
 
             exc_info = cast(T_ExcInfo, sys.exc_info())
             try:
-                await self._on_task_process_exception(task_job, exc_info)
+                if self._on_task_process_exception:
+                    await self._on_task_process_exception(task_job, exc_info)
             except Exception:
-                LOGGER.exception("Exception in exception handler")
+                LOGGER.exception(
+                    "Exception in exception handler for job '%s' (%s)",
+                    job_name,
+                    task_id,
+                )
 
             await self._try_reschedule_task(wrapper, queue)
             return
@@ -156,10 +177,16 @@ class Worker:
         try:
             await task_job.do_post_process()
         except Exception:
-            LOGGER.exception("Exception in job post processing")
+            LOGGER.exception(
+                "Exception in job '%s' (%s) post processing",
+                job_name,
+                task_id,
+            )
 
         LOGGER.info(
-            "Finished job after %s seconds (%s seconds postprocessing) with state %s",
+            "Finished job '%s' (%s) after %s seconds (%s seconds postprocessing) with state %s",
+            job_name,
+            task_id,
             task_job.process_duration,
             task_job.post_process_duration,
             wrapper.task.state.value,
@@ -189,6 +216,7 @@ class Worker:
 
         LOGGER.info("Waiting for %s running job(s) to finish", len(self._job_handlers))
         await asyncio.wait(self._job_handlers, return_when=asyncio.ALL_COMPLETED)
+        LOGGER.info("All jobs are completed.")
 
     async def stop(self) -> None:
         LOGGER.info("Stopping worker")
@@ -219,36 +247,26 @@ class Worker:
         gravekeeper_task.cancel()
 
 
-DEFAULT_LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "level": "INFO",
-        },
-    },
-    "root": {"level": "INFO", "handlers": ["console"]},
-}
-
-DEFAULT_MAX_JOBS = 8
-
-
 def build_worker(
     redis_client: aioredis.Redis,
-    worker_settings: Type[WorkerSettings],
+    factory_cls: Type[BaseJobFactory],
+    factory_kwargs: Optional[Dict],
     queue_names: List[str],
+    queue_namespace: Optional[str] = None,
     max_jobs: Optional[int] = None,
+    on_task_process_exception: Optional[T_ExceptionHandler] = None,
 ) -> Worker:
+    factory_kwargs = factory_kwargs or {}
+    task_factory = factory_cls(**factory_kwargs)
+
+    queue_namespace = queue_namespace or DEFAULT_QUEUE_NAMESPACE
     max_jobs = max_jobs or DEFAULT_MAX_JOBS
-    factory_kwargs = worker_settings.factory_kwargs or {}
-    task_factory = worker_settings.factory_cls(**factory_kwargs)
 
     queue_list: List[Queue] = [
         Queue(
             client=redis_client,
             name=queue_name,
-            namespace=worker_settings.queue_namespace or DEFAULT_QUEUE_NAMESPACE,
+            namespace=queue_namespace,
         )
         for queue_name in queue_names
     ]
@@ -256,7 +274,7 @@ def build_worker(
         queue_list=queue_list,
         task_factory=task_factory,
         max_jobs=max_jobs,
-        on_task_process_exception=worker_settings.on_task_process_exception,
+        on_task_process_exception=on_task_process_exception,
     )
 
     return worker

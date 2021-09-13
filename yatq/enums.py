@@ -43,7 +43,7 @@ class QueueAction(str, Enum):
     Types of events that can happen to tasks in queue. Used in queue events logging.
 
     ADDED - new task added to queue
-    BROKE - task data somehow lost consistency. More info in message
+    BROKEN - task data somehow lost consistency. More info in message
     BURIED - task was buried after reaching execution timeout
     BURY_ERROR - task burial failed. More info in message
     COMPLETED - task was completed successfully
