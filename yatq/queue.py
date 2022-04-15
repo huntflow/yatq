@@ -82,6 +82,7 @@ class Queue:
         self.metrics_resurrected_key = f"{self._key_prefix}:metrics:resurrected"
         self.metrics_buried_key = f"{self._key_prefix}:metrics:buried"
         self.metrics_broken_key = f"{self._key_prefix}:metrics:broken"
+        self.metrics_time_wait = f"{self._key_prefix}:metrics:time_wait"
         self.environment = {
             "processing_key": self.processing_set_name,
             "pending_key": self.pending_set_name,
@@ -95,6 +96,7 @@ class Queue:
             "metrics_resurrected_key": self.metrics_resurrected_key,
             "metrics_buried_key": self.metrics_buried_key,
             "metrics_broken_key": self.metrics_broken_key,
+            "metrics_time_wait": self.metrics_time_wait,
             "default_timeout": DEFAULT_TIMEOUT,
             "default_task_expiration": DEFAULT_TASK_EXPIRATION,
         }
@@ -227,7 +229,7 @@ class Queue:
             if task.policy == RetryPolicy.LINEAR:
                 delay = task.delay * task.retry_counter
             else:
-                delay = task.delay ** task.retry_counter
+                delay = task.delay**task.retry_counter
 
         after_time = int(time.time()) + delay
         task.state = TaskState.REQUEUED

@@ -15,7 +15,6 @@ if aioredis.__version__ >= "2.0":
     async def zadd_single(client: aioredis.Redis, set_name: str, key: str, value: Any):
         await client.zadd(set_name, {key: value})
 
-
 else:
 
     async def create_redis_connection(redis_uri: str):
@@ -114,6 +113,13 @@ class QueueChecker:
     async def assert_metric_broken(self, value: int):
         stored_value = int(
             await self.queue.client.get(self.queue.metrics_broken_key) or 0
+        )
+
+        assert stored_value == value
+
+    async def assert_metric_time_wait(self, value: int):
+        stored_value = int(
+            await self.queue.client.get(self.queue.metrics_time_wait) or 0
         )
 
         assert stored_value == value

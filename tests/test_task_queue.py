@@ -516,3 +516,14 @@ async def test_task_retry_delay(task_queue, queue_checker, freezer):
     await queue_checker.assert_metric_added(1)
     await queue_checker.assert_metric_taken(2)
     await queue_checker.assert_metric_requeued(1)
+
+
+@pytest.mark.asyncio
+async def test_task_wait_time_metric(task_queue, queue_checker, freezer):
+    await task_queue.add_task({"key": "value"})
+
+    await queue_checker.assert_metric_time_wait(0)
+    freezer.tick(3.0)
+
+    await task_queue.get_task()
+    await queue_checker.assert_metric_time_wait(3000)
