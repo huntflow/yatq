@@ -54,7 +54,7 @@ local function get_task_deadline (data)
 end
 
 
-local available_tasks = redis.call("ZRANGEBYSCORE", pending_key, 0, time, "LIMIT", 0, 1)
+local available_tasks = redis.call("ZRANGEBYSCORE", pending_key, 0, time, "WITHSCORES", "LIMIT", 0, 1)
 local task_key = available_tasks[1]
 
 if task_key == nil then
