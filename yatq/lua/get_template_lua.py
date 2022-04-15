@@ -23,6 +23,14 @@ local function incr_metric_key (key)
 	end
 end
 
+local function incr_metric_key_by (key, amount)
+	local incr_success, value = redis.pcall("INCRBY", key, amount)
+
+	if not incr_success then
+		redis.pcall("SET", key, amount)
+	end
+end
+
 
 --[[ Drops invalid task keys from queue
 
@@ -54,6 +62,8 @@ if task_key == nil then
 		success = false
 	})
 end
+
+local task_score = tonumber(available_tasks[2])
 
 redis.call("ZREM", pending_key, task_key)
 local task_id = redis.call("HGET", task_mapping_key, task_key)
@@ -106,6 +116,7 @@ local message = string.format("TAKEN %s %s", task_id, task_key)
 redis.call("PUBLISH", channel, message)
 
 incr_metric_key("$metrics_taken_key")
+incr_metric_key_by("$metrics_time_wait", math.floor((time - task_score) * 1000))
 
 return cjson.encode({
 	success = true,
