@@ -118,6 +118,13 @@ class QueueChecker:
 
         assert stored_value == value
 
+    async def assert_metric_time_wait(self, value: int):
+        stored_value = int(
+            await self.queue.client.get(self.queue.metrics_time_wait) or 0
+        )
+
+        assert stored_value == value
+
 
 @pytest.fixture
 def queue_checker(task_queue) -> QueueChecker:
