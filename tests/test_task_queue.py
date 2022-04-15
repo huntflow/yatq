@@ -526,4 +526,4 @@ async def test_task_wait_time_metric(task_queue, queue_checker, freezer):
     freezer.tick(3.0)
 
     await task_queue.get_task()
-    await queue_checker.assert_metric_time_wait(3)
+    await queue_checker.assert_metric_time_wait(3000)
