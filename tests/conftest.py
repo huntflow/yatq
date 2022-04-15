@@ -15,7 +15,6 @@ if aioredis.__version__ >= "2.0":
     async def zadd_single(client: aioredis.Redis, set_name: str, key: str, value: Any):
         await client.zadd(set_name, {key: value})
 
-
 else:
 
     async def create_redis_connection(redis_uri: str):

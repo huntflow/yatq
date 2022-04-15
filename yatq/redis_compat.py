@@ -11,7 +11,6 @@ if aioredis.__version__ >= "2.0":  # pragma: no cover
     ):  # pragma: no cover
         return await client.evalsha(digest, 0, *args)
 
-
 else:  # pragma: no cover
     from aioredis.errors import ReplyError
 
