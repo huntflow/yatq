@@ -101,6 +101,10 @@ class Task:
         else:
             self.encoded_data = None
 
+    @property
+    def is_last_attempt(self) -> bool:
+        return self.retry_counter >= self.retry_limit
+
 
 class TaskWrapper(NamedTuple):
 
