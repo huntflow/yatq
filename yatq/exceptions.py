@@ -28,3 +28,8 @@ class TaskRetryForbidden(TaskRescheduleException):
 
 class RescheduleLimitReached(TaskRescheduleException):
     ...
+
+
+class RetryTask(BaseQueueException):
+    def __init__(self, force: bool = False):
+        self.force = force
