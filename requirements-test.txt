@@ -1,4 +1,4 @@
 pytest
-pytest-asyncio
+pytest-asyncio==0.18.3
 pytest-freezegun
 pytest-redis

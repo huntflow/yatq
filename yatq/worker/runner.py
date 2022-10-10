@@ -2,21 +2,16 @@ import asyncio
 import logging.config
 import sys
 import traceback
-from typing import Awaitable, Callable, Dict, List, Optional, Set, Type, cast
+from typing import Dict, List, Optional, Set, Type, cast
 
 import aioredis
 
-from yatq.defaults import (
-    DEFAULT_LOGGING_CONFIG,
-    DEFAULT_MAX_JOBS,
-    DEFAULT_QUEUE_NAMESPACE,
-)
+from yatq.defaults import DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE
 from yatq.dto import TaskWrapper
 from yatq.enums import TaskState
-from yatq.exceptions import TaskRescheduleException
+from yatq.exceptions import RetryTask, TaskRescheduleException
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
-from yatq.worker.job.simple import BaseJob
 from yatq.worker.worker_settings import T_ExceptionHandler, T_ExcInfo
 
 LOGGER = logging.getLogger("yatq.worker")
@@ -153,6 +148,10 @@ class Worker:
         try:
             await process_task
             process_task.result()
+        except RetryTask as retry_exc:
+            LOGGER.info("Retrying job '%s' (%s)", job_name, task_id)
+            await self._try_reschedule_task(wrapper, queue, force=retry_exc.force)
+            return
         except Exception:
             LOGGER.exception("Exception in job '%s' (%s)", job_name, task_id)
             wrapper.task.result = {"traceback": traceback.format_exc()}

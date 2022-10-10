@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from yatq.enums import RetryPolicy, TaskState
+from yatq.exceptions import RetryTask
 from yatq.queue import Queue
 from yatq.worker.factory.simple import SimpleJobFactory
 from yatq.worker.job.simple import SimpleJob
@@ -303,6 +304,45 @@ async def test_worker_job_run_failed_requeued(redis_connection, task_queue: Queu
     task = await task_queue.check_task(scheduled_task.id)
     assert task.state == TaskState.REQUEUED
     assert len(worker._job_handlers) == 0
+
+
+@pytest.mark.asyncio
+async def test_worker_job_run_failed_requeued_manually(
+    redis_connection, task_queue: Queue
+):
+    class Job(SimpleJob):
+        async def run(self, **kwargs) -> Any:
+            raise RetryTask(force=True)
+
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}},
+        retry_policy=RetryPolicy.LINEAR,
+        retry_limit=1,
+    )
+    task = await task_queue.check_task(scheduled_task.id)
+    assert task.is_last_attempt is False
+
+    worker = build_worker(
+        redis_connection,
+        SimpleJobFactory,
+        {"handlers": {"job": Job}},
+        [task_queue.name],
+        queue_namespace=task_queue.namespace,
+    )
+
+    run_coro = worker.run()
+    run_task = asyncio.create_task(run_coro)
+    await asyncio.wait_for(worker.started.wait(), timeout=1)
+    await asyncio.wait_for(worker.got_task.wait(), timeout=1)
+
+    await worker.stop()
+    await asyncio.wait_for(run_task, timeout=1)
+    assert not run_task.exception()
+
+    task = await task_queue.check_task(scheduled_task.id)
+    assert task.state == TaskState.REQUEUED
+    assert len(worker._job_handlers) == 0
+    assert task.is_last_attempt is True
 
 
 @pytest.mark.asyncio

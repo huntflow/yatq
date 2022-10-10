@@ -4,7 +4,8 @@ import logging.config
 import signal
 from typing import Dict, List, Optional, Type
 
-from yatq.worker.runner import DEFAULT_LOGGING_CONFIG, build_worker
+from yatq.defaults import DEFAULT_LOGGING_CONFIG
+from yatq.worker.runner import build_worker
 from yatq.worker.utils import import_string
 from yatq.worker.worker_settings import WorkerSettings
 
