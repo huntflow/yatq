@@ -13,7 +13,7 @@ from yatq.defaults import (
 )
 from yatq.dto import TaskWrapper
 from yatq.enums import TaskState
-from yatq.exceptions import TaskRescheduleException
+from yatq.exceptions import TaskRescheduleException, RetryTask
 from yatq.queue import Queue
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.job.simple import BaseJob
@@ -153,6 +153,10 @@ class Worker:
         try:
             await process_task
             process_task.result()
+        except RetryTask as retry_exc:
+            LOGGER.info("Retrying job '%s' (%s)", job_name, task_id)
+            await self._try_reschedule_task(wrapper, queue, force=retry_exc.force)
+            return
         except Exception:
             LOGGER.exception("Exception in job '%s' (%s)", job_name, task_id)
             wrapper.task.result = {"traceback": traceback.format_exc()}
