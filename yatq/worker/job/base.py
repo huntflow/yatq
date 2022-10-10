@@ -70,7 +70,7 @@ class BaseJob(ABC):
         yield
 
     @abstractmethod
-    async def run(self) -> None:  # pragma: no cover
+    async def run(self) -> Any:  # pragma: no cover
         ...
 
     async def post_process(self) -> None:
