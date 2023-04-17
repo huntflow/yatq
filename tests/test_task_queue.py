@@ -419,7 +419,7 @@ async def test_task_retry_exponential_policy(task_queue, queue_checker, freezer)
 @pytest.mark.asyncio
 async def test_task_retry_every_x_policy(task_queue, queue_checker, freezer):
     task_1 = await task_queue.add_task(
-        {"key": "value"}, retry_policy=RetryPolicy.EVERY_X, retry_delay=4
+        {"key": "value"}, retry_policy=RetryPolicy.FIXED_INTERVAL, retry_delay=4
     )
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)

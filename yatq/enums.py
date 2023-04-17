@@ -9,13 +9,13 @@ class RetryPolicy(str, Enum):
     NONE - no retry allowed
     LINEAR - delay between executions grows linearly
     EXPONENTIAL - delay between executions grows exponentially
-    EVERY_X - delay between executions is constant independent of retries
+    FIXED_INTERVAL - delay between executions is constant independent of retries
     """
 
     NONE = "NONE"
     LINEAR = "LINEAR"
     EXPONENTIAL = "EXPONENTIAL"
-    EVERY_X = "EVERY_X"
+    FIXED_INTERVAL = "FIXED_INTERVAL"
 
 
 class TaskState(str, Enum):
