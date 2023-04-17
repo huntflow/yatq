@@ -228,8 +228,10 @@ class Queue:
 
             if task.policy == RetryPolicy.LINEAR:
                 delay = task.delay * task.retry_counter
-            else:
+            elif task.policy == RetryPolicy.EXPONENTIAL:
                 delay = task.delay**task.retry_counter
+            else:
+                delay = task.delay
 
         after_time = int(time.time()) + delay
         task.state = TaskState.REQUEUED

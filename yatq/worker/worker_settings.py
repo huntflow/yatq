@@ -1,5 +1,6 @@
 from types import TracebackType
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Type
+from abc import ABC, abstractmethod
 
 import aioredis
 
@@ -11,7 +12,7 @@ T_ExcInfo = Tuple[Type[BaseException], BaseException, TracebackType]
 T_ExceptionHandler = Callable[[BaseJob, T_ExcInfo], Awaitable]
 
 
-class WorkerSettings:
+class WorkerSettings(ABC):
 
     """
     WorkerSettings class is used to configure worker.
@@ -36,6 +37,7 @@ class WorkerSettings:
         ...
 
     @staticmethod
+    @abstractmethod
     async def redis_client() -> aioredis.Redis:  # pragma: no cover
         ...
 

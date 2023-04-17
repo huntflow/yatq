@@ -417,6 +417,69 @@ async def test_task_retry_exponential_policy(task_queue, queue_checker, freezer)
 
 
 @pytest.mark.asyncio
+async def test_task_retry_every_x_policy(task_queue, queue_checker, freezer):
+    task_1 = await task_queue.add_task(
+        {"key": "value"}, retry_policy=RetryPolicy.FIXED_INTERVAL, retry_delay=4
+    )
+    assert isinstance(task_1.id, str)
+    await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
+
+    await queue_checker.assert_pending_count(1)
+    await queue_checker.assert_processing_count(0)
+
+    task = await task_queue.get_task()
+    await queue_checker.assert_pending_count(0)
+    await queue_checker.assert_processing_count(1)
+    await queue_checker.assert_state(task_1.id, TaskState.PROCESSING)
+
+    await task_queue.auto_reschedule_task(task)
+    await queue_checker.assert_pending_count(1)
+    await queue_checker.assert_processing_count(0)
+    await queue_checker.assert_state(task_1.id, TaskState.REQUEUED)
+
+    # Task is not immediately available
+    task = await task_queue.get_task()
+    assert task is None
+
+    # Task is not available after 3 seconds
+    freezer.tick(3)
+    task = await task_queue.get_task()
+    assert task is None
+
+    # Task is available after 5 seconds
+    freezer.tick(4)
+    task = await task_queue.get_task()
+    assert task is not None
+    await queue_checker.assert_pending_count(0)
+    await queue_checker.assert_processing_count(1)
+    await queue_checker.assert_state(task_1.id, TaskState.PROCESSING)
+    await task_queue.auto_reschedule_task(task)
+
+    await queue_checker.assert_metric_added(1)
+    await queue_checker.assert_metric_taken(2)
+    await queue_checker.assert_metric_requeued(2)
+
+    # Second retry - task is not available after 3 seconds
+    freezer.tick(3)
+    task = await task_queue.get_task()
+    assert task is None
+
+    # Task is available after 4 seconds
+    freezer.tick(1)
+    task = await task_queue.get_task()
+    assert task is not None
+    await queue_checker.assert_pending_count(0)
+    await queue_checker.assert_processing_count(1)
+    await queue_checker.assert_state(task_1.id, TaskState.PROCESSING)
+    await task_queue.auto_reschedule_task(task)
+
+    await queue_checker.assert_metric_added(1)
+    await queue_checker.assert_metric_taken(3)
+    await queue_checker.assert_metric_requeued(3)
+
+
+
+@pytest.mark.asyncio
 async def test_task_retry_forced(task_queue, queue_checker, freezer):
     task_1 = await task_queue.add_task(
         {"key": "value"}, retry_policy=RetryPolicy.EXPONENTIAL, retry_delay=4
