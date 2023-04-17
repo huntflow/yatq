@@ -447,7 +447,7 @@ async def test_task_retry_every_x_policy(task_queue, queue_checker, freezer):
     assert task is None
 
     # Task is available after 5 seconds
-    freezer.tick(2)
+    freezer.tick(4)
     task = await task_queue.get_task()
     assert task is not None
     await queue_checker.assert_pending_count(0)
