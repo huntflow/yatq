@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, '3.10', 3.11]
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
         aioredis-version: [1.2.0, 2.0.0]
         redis-versions: [4.5.5]
 
@@ -38,7 +38,7 @@ jobs:
         pip install "aioredis==${{ matrix.aioredis-version }}"
 
     - name: Install redis
-      if: matrix.python-version >= 3.11
+      if: matrix.python-version >= '3.11'
       run: |
         pip install "redis==${{ matrix.redis-version }}"
 
