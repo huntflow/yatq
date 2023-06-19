@@ -478,7 +478,6 @@ async def test_task_retry_every_x_policy(task_queue, queue_checker, freezer):
     await queue_checker.assert_metric_requeued(3)
 
 
-
 @pytest.mark.asyncio
 async def test_task_retry_forced(task_queue, queue_checker, freezer):
     task_1 = await task_queue.add_task(

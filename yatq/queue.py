@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4
 
-from aioredis import Redis
+try:
+    from aioredis import Redis # pragma: no cover
+except ImportError:
+    from redis.asyncio import Redis  # type: ignore # pragma: no cover
 
 from .defaults import (
     DEFAULT_QUEUE_NAME,

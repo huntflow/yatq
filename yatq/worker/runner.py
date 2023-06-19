@@ -4,7 +4,10 @@ import sys
 import traceback
 from typing import Dict, List, Optional, Set, Type, cast
 
-import aioredis
+try:
+    import aioredis
+except ImportError:
+    from redis import asyncio as aioredis  # type: ignore
 
 from yatq.defaults import DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE
 from yatq.dto import TaskWrapper
@@ -61,7 +64,10 @@ class Worker:
 
     async def _wait_poll(self) -> None:
         _, pending = await asyncio.wait(
-            {self._poll_event.wait(), self._stop_event.wait()},
+            {
+                asyncio.create_task(self._poll_event.wait()),
+                asyncio.create_task(self._stop_event.wait()),
+            },
             return_when=asyncio.FIRST_COMPLETED,
         )
 

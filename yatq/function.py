@@ -4,7 +4,10 @@ from hashlib import sha1
 from string import Template
 from typing import Any, Dict
 
-from aioredis import Redis
+try:
+    from aioredis import Redis
+except ImportError:
+    from redis.asyncio import Redis  # type: ignore
 
 from yatq.redis_compat import NoScriptError, eval_sha  # type: ignore
 
