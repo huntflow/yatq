@@ -2,7 +2,7 @@
 from typing import Any, Tuple
 from yatq.py_version import AIOREDIS_USE
 
-if AIOREDIS_USE: # pragma: no cover
+if AIOREDIS_USE:  # pragma: no cover
     import aioredis
 
     if aioredis.__version__ >= "2.0":
@@ -29,7 +29,7 @@ if AIOREDIS_USE: # pragma: no cover
                     raise NoScriptError(error.args[0])
                 raise
 
-else: # pragma: no cover
+else:  # pragma: no cover
     from redis import asyncio as aioredis
     from redis.exceptions import NoScriptError
 

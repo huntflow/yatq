@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Union
 from uuid import uuid4
 
 try:
-    from aioredis import Redis # pragma: no cover
+    from aioredis import Redis  # pragma: no cover
 except ImportError:
     from redis.asyncio import Redis  # type: ignore # pragma: no cover
 
