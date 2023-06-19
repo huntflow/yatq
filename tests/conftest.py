@@ -13,7 +13,7 @@ import pytest
 from yatq.dto import TaskState
 from yatq.queue import Queue
 
-if not AIOREDIS_USE or aioredis.__version__ >= "2.0":  # pragma: no cover
+if not AIOREDIS_USE or aioredis.__version__ >= "2.0":
 
     async def create_redis_connection(redis_uri: str):
         return aioredis.from_url(redis_uri)

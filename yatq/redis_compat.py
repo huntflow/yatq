@@ -2,7 +2,7 @@
 from typing import Any, Tuple
 from yatq.py_version import AIOREDIS_USE
 
-if AIOREDIS_USE:  # pragma: no cover
+if AIOREDIS_USE:
     import aioredis
 
     if aioredis.__version__ >= "2.0":
@@ -13,7 +13,7 @@ if AIOREDIS_USE:  # pragma: no cover
         ):  # pragma: no cover
             return await client.evalsha(digest, 0, *args)
 
-    else:
+    else:  # pragma: no cover
         from aioredis.errors import ReplyError
 
         class NoScriptError(ReplyError):
@@ -36,5 +36,4 @@ else:  # pragma: no cover
     async def eval_sha(
         client: aioredis.Redis, digest: str, args: Tuple[Any]
     ):  # pragma: no cover
-        # return await client.evalsha(digest, 0, *args)
         return await client.execute_command("EVALSHA", digest, 0, *args)

@@ -4,10 +4,13 @@ import sys
 import traceback
 from typing import Dict, List, Optional, Set, Type, cast
 
-try:
+from yatq.py_version import AIOREDIS_USE
+
+if AIOREDIS_USE:
     import aioredis
-except ImportError:
+else:  # pragma: no cover
     from redis import asyncio as aioredis  # type: ignore
+
 
 from yatq.defaults import DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE
 from yatq.dto import TaskWrapper

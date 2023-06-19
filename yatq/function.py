@@ -4,10 +4,12 @@ from hashlib import sha1
 from string import Template
 from typing import Any, Dict
 
-try:
+from yatq.py_version import AIOREDIS_USE
+
+if AIOREDIS_USE:
     from aioredis import Redis
-except ImportError:
-    from redis.asyncio import Redis  # type: ignore
+else:
+    from redis.asyncio import Redis  # type: ignore # pragma: no cover
 
 from yatq.redis_compat import NoScriptError, eval_sha  # type: ignore
 
