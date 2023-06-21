@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4
 
-from aioredis import Redis
+from yatq.py_version import AIOREDIS_USE
+
+if AIOREDIS_USE:
+    from aioredis import Redis
+else:
+    from redis.asyncio import Redis  # type: ignore # pragma: no cover
 
 from .defaults import (
     DEFAULT_QUEUE_NAME,

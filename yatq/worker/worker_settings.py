@@ -2,7 +2,12 @@ from types import TracebackType
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Type
 from abc import ABC, abstractmethod
 
-import aioredis
+from yatq.py_version import AIOREDIS_USE
+
+if AIOREDIS_USE:
+    import aioredis
+else:  # pragma: no cover
+    from redis import asyncio as aioredis  # type: ignore
 
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.factory.simple import SimpleJobFactory
