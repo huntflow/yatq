@@ -44,7 +44,7 @@ def run_worker_cli():  # pragma: no cover
     )
 
 
-def run(
+async def async_run(
     worker_settings: Type[WorkerSettings],
     queue_names: List[str],
     logging_config: Optional[Dict] = None,
@@ -55,9 +55,9 @@ def run(
 
     loop = asyncio.get_event_loop()
 
-    loop.run_until_complete(worker_settings.on_startup())
+    await worker_settings.on_startup()
     try:
-        redis_client = loop.run_until_complete(worker_settings.redis_client())
+        redis_client = await worker_settings.redis_client()
         worker = build_worker(
             redis_client,
             worker_settings.factory_cls,
@@ -72,6 +72,23 @@ def run(
         for signum in stop_signals:
             loop.add_signal_handler(signum, lambda: asyncio.create_task(worker.stop()))
 
-        loop.run_until_complete(worker.run())
+        await worker.run()
     finally:
-        loop.run_until_complete(worker_settings.on_shutdown())
+        await worker_settings.on_shutdown()
+
+
+def run(
+    worker_settings: Type[WorkerSettings],
+    queue_names: List[str],
+    logging_config: Optional[Dict] = None,
+    max_jobs: Optional[int] = None,
+) -> None:  # pragma: no cover
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
+        async_run(
+            worker_settings=worker_settings,
+            queue_names=queue_names,
+            logging_config=logging_config,
+            max_jobs=max_jobs,
+        ),
+    )
