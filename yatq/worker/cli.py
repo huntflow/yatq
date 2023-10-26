@@ -83,13 +83,12 @@ def run(
     logging_config: Optional[Dict] = None,
     max_jobs: Optional[int] = None,
 ) -> None:  # pragma: no cover
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
         async_run(
             worker_settings=worker_settings,
             queue_names=queue_names,
             logging_config=logging_config,
-            max_jobs=max_jobs
+            max_jobs=max_jobs,
         ),
     )
