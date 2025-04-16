@@ -2,6 +2,7 @@ from typing import Dict, Type
 
 from yatq.dto import Task
 from yatq.worker.factory.base import BaseJobFactory
+from yatq.worker.job.base import BaseJob
 from yatq.worker.job.simple import SimpleJob
 
 
@@ -20,12 +21,14 @@ class SimpleJobFactory(BaseJobFactory[SimpleJob]):
         super().__init__(**kwargs)
         self.handlers = handlers
 
-    def create_job(self, task: Task) -> SimpleJob:
+
+    def get_job_class(self, task: Task) -> Type[SimpleJob]:
         task_data = task.data
         if not task_data:
             raise ValueError("Task data is not set")
-
         task_function = task_data["name"]
-        handler_class = self.handlers[task_function]
+        return self.handlers[task_function]
 
+    def create_job(self, task: Task) -> SimpleJob:
+        handler_class = self.get_job_class(task)
         return handler_class(task)

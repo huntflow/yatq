@@ -2,9 +2,11 @@ import asyncio
 import logging.config
 import sys
 import traceback
-from typing import Dict, List, Optional, Set, Type, cast
+from inspect import isawaitable
+from typing import Dict, List, Optional, Set, Type, cast, Coroutine, Tuple
 
 from yatq.py_version import AIOREDIS_USE
+from yatq.worker.job.base import BaseJob
 
 if AIOREDIS_USE:
     import aioredis
@@ -13,7 +15,7 @@ else:  # pragma: no cover
 
 
 from yatq.defaults import DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE
-from yatq.dto import TaskWrapper
+from yatq.dto import TaskWrapper, WorkerState, RunningTaskState
 from yatq.enums import TaskState
 from yatq.exceptions import RetryTask, TaskRescheduleException
 from yatq.queue import Queue
@@ -23,7 +25,8 @@ from yatq.worker.worker_settings import T_ExceptionHandler, T_ExcInfo
 LOGGER = logging.getLogger("yatq.worker")
 LOGGER.setLevel("INFO")
 GRAVEKEEPER_LOGGER = logging.getLogger("yatq.gravekeeper")
-
+PROFILING_LOGGER = logging.getLogger("yatq.profiling")
+PROFILING_LOGGER.propagate = False
 
 class Worker:
     def __init__(
@@ -34,6 +37,8 @@ class Worker:
         poll_interval: float = 2.0,
         max_jobs: int = 8,
         gravekeeper_interval: float = 30.0,
+        profiling_interval: Optional[float] = None,
+        on_stop_handlers: Optional[List[Coroutine]] = None,
     ) -> None:
         self.queue_list = queue_list
         self.task_factory = task_factory
@@ -52,9 +57,12 @@ class Worker:
         self._stop_event = asyncio.Event()
 
         self._max_jobs = max_jobs
-        self._job_handlers: Set[asyncio.Task] = set()
+        self._job_handlers: Dict[asyncio.Task, Tuple[TaskWrapper, Queue]] = {}
 
         self._on_task_process_exception = on_task_process_exception
+        self._profiling_task = None
+        self._profiling_interval = profiling_interval
+        self._on_stop_handlers = on_stop_handlers
 
     @property
     def should_get_new_task(self) -> bool:
@@ -112,7 +120,7 @@ class Worker:
         return False
 
     async def _start_task_processing(self, wrapper: TaskWrapper, queue: Queue) -> None:
-        LOGGER.info("Got task %s", wrapper.task.id)
+        LOGGER.info("Got task %s", wrapper.summary)
         LOGGER.debug("Task data: %s", wrapper.task.encoded_data)
 
         self.got_task.clear()
@@ -120,14 +128,14 @@ class Worker:
 
         handle_task = asyncio.create_task(self._handle_task(wrapper, queue))
         handle_task.add_done_callback(self._remove_completed_handle_task)
-        self._job_handlers.add(handle_task)
+        self._job_handlers[handle_task] = (wrapper, queue)
 
     def _remove_completed_handle_task(self, task: asyncio.Task) -> None:
-        self._job_handlers.discard(task)
+        self._job_handlers.pop(task)
         self.completed_task.clear()
         self.completed_task.set()
 
-    async def _handle_task(self, wrapper, queue) -> None:
+    async def _handle_task(self, wrapper: TaskWrapper, queue: Queue) -> None:
         task_id = wrapper.task.id
         try:
             task_job = self.task_factory.create_job(wrapper.task)
@@ -249,10 +257,104 @@ class Worker:
                     continue
             await self._wait_poll()
 
+        if self._on_stop_handlers:
+            await asyncio.gather(*self._on_stop_handlers)
+
         await self._complete_pending_jobs()
 
         periodic_poll_task.cancel()
         gravekeeper_task.cancel()
+
+    async def _run_profiler(self):
+        import tracemalloc
+        from collections import Counter
+
+        tracemalloc.start()
+
+        while True:
+            snapshot = tracemalloc.take_snapshot()
+            top_stats = snapshot.statistics("lineno")[:10]
+
+            PROFILING_LOGGER.info("Memory stats:")
+            for entry in top_stats:
+                PROFILING_LOGGER.info(str(entry))
+
+            coros = Counter()
+            for task in asyncio.Task.all_tasks():
+                coro_name = task._coro.__qualname__
+                coros[coro_name] += 1
+
+            PROFILING_LOGGER.info("Total running tasks: %s", sum(coros.values()))
+            for coro_name, coro_count in coros.most_common(10):
+                PROFILING_LOGGER.info("Coroutine %s: %s object(s)", coro_name, coro_count)
+
+            await asyncio.sleep(self._profiling_interval)
+
+    async def start_profiler(self):
+        if not self._profiling_interval:
+            return
+
+        LOGGER.info("Starting profiler")
+        self._profiling_task = asyncio.create_task(self._run_profiler())
+
+    async def stop_profiler(self):
+        if not self._profiling_task:
+            return
+
+        self._profiling_task.cancel()
+        try:
+            await self._profiling_task
+        except asyncio.CancelledError:
+            pass
+
+        self._profiling_task = None
+
+    def get_state(self) -> WorkerState:
+        task_state = []
+        for aio_task, (wrapper, queue) in self._job_handlers.items():
+            task_id = wrapper.task.id
+            task_key = wrapper.key
+            task_data = wrapper.task.data
+            handler = self.task_factory.get_job_class(wrapper.task)
+            task_handler = handler.__class__.__module__ + "." + handler.__class__.__qualname__
+            task_frames = [str(frame) for frame in aio_task.get_stack()]
+
+            coro = aio_task._coro  # aio_task.get_coro() after 3.8
+            coro_stack = []
+            while True:
+                try:
+                    frame = coro.cr_frame
+                except AttributeError:
+                    frame = coro.gi_frame
+
+                coro_stack.append(str(frame))
+
+                try:
+                    coro = coro.cr_await
+                except AttributeError:
+                    coro = coro.gi_yieldfrom
+                if not isawaitable(coro):
+                    break
+
+            task_state.append(
+                RunningTaskState(
+                    id=task_id,
+                    key=task_key,
+                    data=task_data,
+                    taken_at=wrapper.taken_at,
+                    handler=task_handler,
+                    task_stack=task_frames,
+                    coro_stack=coro_stack,
+                )
+            )
+
+        max_tasks = self._max_jobs
+        current_task_count = len(self._job_handlers)
+        return WorkerState(
+            max_tasks=max_tasks,
+            current_task_count=current_task_count,
+            current_task_state=task_state,
+        )
 
 
 def build_worker(
@@ -263,6 +365,8 @@ def build_worker(
     queue_namespace: Optional[str] = None,
     max_jobs: Optional[int] = None,
     on_task_process_exception: Optional[T_ExceptionHandler] = None,
+    profiling_interval: Optional[float] = None,
+    on_stop_handlers: Optional[List[Coroutine]] = None,
 ) -> Worker:
     factory_kwargs = factory_kwargs or {}
     task_factory = factory_cls(**factory_kwargs)
@@ -283,6 +387,8 @@ def build_worker(
         task_factory=task_factory,
         max_jobs=max_jobs,
         on_task_process_exception=on_task_process_exception,
+        profiling_interval=profiling_interval,
+        on_stop_handlers=on_stop_handlers,
     )
 
     return worker

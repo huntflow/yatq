@@ -2,7 +2,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, NamedTuple, Optional, List
 
 from .defaults import DEFAULT_TASK_EXPIRATION
 from .enums import QueueAction, RetryPolicy, TaskState
@@ -118,7 +118,15 @@ class TaskWrapper(NamedTuple):
 
     key: str
     task: Task
+    taken_at: datetime
     deadline: Optional[datetime] = None
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"Task id = {self.task.id}, name = {(self.task.data or {}).get('name')}, "
+            f"key = {self.key}"
+        )
 
 
 class ScheduledTask(NamedTuple):
@@ -132,3 +140,21 @@ class ScheduledTask(NamedTuple):
 
     id: str
     completed: asyncio.Event
+
+
+@dataclass
+class RunningTaskState:
+    id: str
+    key: str
+    data: Any
+    taken_at: datetime
+    handler: str
+    task_stack: List[str]
+    coro_stack: List[str]
+
+
+@dataclass
+class WorkerState:
+    max_tasks: int
+    current_task_count: int
+    current_task_state: List[RunningTaskState]
