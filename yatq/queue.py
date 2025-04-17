@@ -205,7 +205,7 @@ class Queue:
             wrapped_task.key,
             wrapped_task.task.id,
             encode_task(wrapped_task.task),
-            wrapped_task.task.ttl or 0,
+            wrapped_task.task.ttl or DEFAULT_TASK_EXPIRATION,
         )
 
     async def fail_task(self, wrapped_task: TaskWrapper):
