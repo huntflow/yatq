@@ -348,18 +348,18 @@ async def test_worker_job_run_failed_requeued_manually(
 @pytest.mark.asyncio
 async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Queue):
     scheduled_task = await task_queue.add_task(
-        {"name": "job", "kwargs": {}}, task_timeout=0
+        {"name": "job", "kwargs": {}},
+        task_timeout=0,
     )
     await task_queue.get_task()
-
     freezer.tick(10)
-
     worker = build_worker(
         redis_connection,
         SimpleJobFactory,
         {"handlers": {}},
         [task_queue.name],
         queue_namespace=task_queue.namespace,
+        default_ttl=60,
     )
     await worker._call_gravekeeper()
 

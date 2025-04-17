@@ -14,7 +14,11 @@ else:  # pragma: no cover
     from redis import asyncio as aioredis  # type: ignore
 
 
-from yatq.defaults import DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE
+from yatq.defaults import (
+    DEFAULT_MAX_JOBS,
+    DEFAULT_QUEUE_NAMESPACE,
+    DEFAULT_TASK_EXPIRATION,
+)
 from yatq.dto import TaskWrapper, WorkerState, RunningTaskState
 from yatq.enums import TaskState
 from yatq.exceptions import RetryTask, TaskRescheduleException
@@ -27,6 +31,7 @@ LOGGER.setLevel("INFO")
 GRAVEKEEPER_LOGGER = logging.getLogger("yatq.gravekeeper")
 PROFILING_LOGGER = logging.getLogger("yatq.profiling")
 PROFILING_LOGGER.propagate = False
+
 
 class Worker:
     def __init__(
@@ -286,7 +291,9 @@ class Worker:
 
             PROFILING_LOGGER.info("Total running tasks: %s", sum(coros.values()))
             for coro_name, coro_count in coros.most_common(10):
-                PROFILING_LOGGER.info("Coroutine %s: %s object(s)", coro_name, coro_count)
+                PROFILING_LOGGER.info(
+                    "Coroutine %s: %s object(s)", coro_name, coro_count
+                )
 
             await asyncio.sleep(self._profiling_interval)
 
@@ -316,7 +323,9 @@ class Worker:
             task_key = wrapper.key
             task_data = wrapper.task.data
             handler = self.task_factory.get_job_class(wrapper.task)
-            task_handler = handler.__class__.__module__ + "." + handler.__class__.__qualname__
+            task_handler = (
+                handler.__class__.__module__ + "." + handler.__class__.__qualname__
+            )
             task_frames = [str(frame) for frame in aio_task.get_stack()]
 
             coro = aio_task._coro  # aio_task.get_coro() after 3.8
@@ -365,6 +374,7 @@ def build_worker(
     queue_namespace: Optional[str] = None,
     max_jobs: Optional[int] = None,
     on_task_process_exception: Optional[T_ExceptionHandler] = None,
+    default_ttl: int = DEFAULT_TASK_EXPIRATION,
     profiling_interval: Optional[float] = None,
     on_stop_handlers: Optional[List[Coroutine]] = None,
 ) -> Worker:
@@ -379,6 +389,7 @@ def build_worker(
             client=redis_client,
             name=queue_name,
             namespace=queue_namespace,
+            default_ttl=default_ttl,
         )
         for queue_name in queue_names
     ]

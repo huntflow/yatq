@@ -68,7 +68,7 @@ class Queue:
         bury_template: str = BURY_TEMPLATE,
         drop_template: str = DROP_TEMPLATE,
         logger: Optional[logging.Logger] = None,
-        default_ttl: int = DEFAULT_TASK_EXPIRATION
+        default_ttl: int = DEFAULT_TASK_EXPIRATION,
     ):
         assert ":" not in name, "Name should not contain ':'"
         assert ":" not in namespace, "Namespace should not contain ':'"

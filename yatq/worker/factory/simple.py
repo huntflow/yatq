@@ -21,7 +21,6 @@ class SimpleJobFactory(BaseJobFactory[SimpleJob]):
         super().__init__(**kwargs)
         self.handlers = handlers
 
-
     def get_job_class(self, task: Task) -> Type[SimpleJob]:
         task_data = task.data
         if not task_data:
