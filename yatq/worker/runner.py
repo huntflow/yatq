@@ -193,6 +193,7 @@ class Worker:
             return
 
         wrapper.task.state = TaskState.COMPLETED
+        wrapper.task.finished = datetime.now()
         await queue.complete_task(wrapper)
 
         try:
