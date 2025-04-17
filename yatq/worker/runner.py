@@ -326,7 +326,7 @@ class Worker:
             )
             task_frames = [str(frame) for frame in aio_task.get_stack()]
 
-            coro: Coroutine = aio_task.get_coro()
+            coro = aio_task.get_coro()
             coro_stack = []
             while True:
                 try:
