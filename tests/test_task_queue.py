@@ -2,8 +2,7 @@ import pytest
 
 from yatq.dto import TaskWrapper
 from yatq.enums import RetryPolicy, TaskState
-from yatq.exceptions import (RescheduleLimitReached, TaskAddException,
-                             TaskRetryForbidden)
+from yatq.exceptions import RescheduleLimitReached, TaskAddException, TaskRetryForbidden
 from yatq.queue import Queue
 
 
