@@ -2,6 +2,8 @@ import asyncio
 import logging.config
 import sys
 import traceback
+from calendar import day_name
+from datetime import datetime
 from inspect import isawaitable
 from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast
 
@@ -284,7 +286,7 @@ class Worker:
 
             coros = Counter()
             for task in asyncio.Task.all_tasks():
-                coro_name = task._coro.__qualname__
+                coro_name = task.get_coro().__qualname__
                 coros[coro_name] += 1
 
             PROFILING_LOGGER.info("Total running tasks: %s", sum(coros.values()))

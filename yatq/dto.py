@@ -1,6 +1,7 @@
 import asyncio
+import inspect
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, NamedTuple, Optional
 
@@ -84,6 +85,16 @@ class Task:
 
     retry_counter: int = 0
     retry_limit: int = 3
+
+    @classmethod
+    def build(cls, **kwargs) -> "Task":
+        return cls(
+            **{
+                k: v
+                for k, v in kwargs.items()
+                if k in inspect.signature(cls).parameters
+            }
+        )
 
     @property
     def data(self) -> Optional[Dict]:

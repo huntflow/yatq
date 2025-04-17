@@ -49,7 +49,7 @@ def encode_task(task: Task) -> str:
 
 
 def decode_task(data: dict) -> Task:
-    return Task(**data)
+    return Task.build(**data)
 
 
 PATH_TYPE = Union[str, Path]
