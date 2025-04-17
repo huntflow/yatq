@@ -1,1 +1,1 @@
-from .worker.cli import run, async_run
+from .worker.cli import async_run, run

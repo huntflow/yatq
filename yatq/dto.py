@@ -2,7 +2,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, NamedTuple, Optional, List
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from .defaults import DEFAULT_TASK_EXPIRATION
 from .enums import QueueAction, RetryPolicy, TaskState

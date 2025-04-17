@@ -10,7 +10,6 @@ from yatq.queue import Queue
 from yatq.worker.factory.simple import SimpleJobFactory
 from yatq.worker.job.simple import SimpleJob
 from yatq.worker.runner import build_worker
-from yatq.worker.worker_settings import WorkerSettings
 
 
 @pytest.mark.asyncio

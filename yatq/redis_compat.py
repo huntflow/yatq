@@ -1,5 +1,6 @@
 # type: ignore
 from typing import Any, Tuple
+
 from yatq.py_version import AIOREDIS_USE
 
 if AIOREDIS_USE:

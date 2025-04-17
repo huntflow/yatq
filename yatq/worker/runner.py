@@ -3,23 +3,18 @@ import logging.config
 import sys
 import traceback
 from inspect import isawaitable
-from typing import Dict, List, Optional, Set, Type, cast, Coroutine, Tuple
+from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast
 
 from yatq.py_version import AIOREDIS_USE
-from yatq.worker.job.base import BaseJob
 
 if AIOREDIS_USE:
     import aioredis
 else:  # pragma: no cover
     from redis import asyncio as aioredis  # type: ignore
 
-
-from yatq.defaults import (
-    DEFAULT_MAX_JOBS,
-    DEFAULT_QUEUE_NAMESPACE,
-    DEFAULT_TASK_EXPIRATION,
-)
-from yatq.dto import TaskWrapper, WorkerState, RunningTaskState
+from yatq.defaults import (DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE,
+                           DEFAULT_TASK_EXPIRATION)
+from yatq.dto import RunningTaskState, TaskWrapper, WorkerState
 from yatq.enums import TaskState
 from yatq.exceptions import RetryTask, TaskRescheduleException
 from yatq.queue import Queue
@@ -328,7 +323,7 @@ class Worker:
             )
             task_frames = [str(frame) for frame in aio_task.get_stack()]
 
-            coro = aio_task._coro  # aio_task.get_coro() after 3.8
+            coro: Coroutine = aio_task.get_coro()
             coro_stack = []
             while True:
                 try:

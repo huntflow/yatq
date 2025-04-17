@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Type
+from typing import Generic, Type, TypeVar
 
 from yatq.dto import Task
 from yatq.worker.job.base import BaseJob

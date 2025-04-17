@@ -1,6 +1,6 @@
+from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Type
-from abc import ABC, abstractmethod
 
 from yatq.py_version import AIOREDIS_USE
 

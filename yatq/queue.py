@@ -16,30 +16,16 @@ if AIOREDIS_USE:
 else:
     from redis.asyncio import Redis  # type: ignore # pragma: no cover
 
-from .defaults import (
-    DEFAULT_QUEUE_NAME,
-    DEFAULT_QUEUE_NAMESPACE,
-    DEFAULT_TASK_EXPIRATION,
-    DEFAULT_TIMEOUT,
-)
-from .dto import ScheduledTask, Task, TaskWrapper, QueueEvent
-from .enums import RetryPolicy, TaskState, QueueAction
-from .exceptions import (
-    RescheduledTaskMissing,
-    RescheduleLimitReached,
-    TaskAddException,
-    TaskRescheduleException,
-    TaskRetryForbidden,
-)
+from .defaults import (DEFAULT_QUEUE_NAME, DEFAULT_QUEUE_NAMESPACE,
+                       DEFAULT_TASK_EXPIRATION, DEFAULT_TIMEOUT)
+from .dto import QueueEvent, ScheduledTask, Task, TaskWrapper
+from .enums import QueueAction, RetryPolicy, TaskState
+from .exceptions import (RescheduledTaskMissing, RescheduleLimitReached,
+                         TaskAddException, TaskRescheduleException,
+                         TaskRetryForbidden)
 from .function import LuaFunction
-from .lua import (
-    ADD_TEMPLATE,
-    BURY_TEMPLATE,
-    COMPLETE_TEMPLATE,
-    GET_TEMPLATE,
-    RESCHEDULE_TEMPLATE,
-    DROP_TEMPLATE,
-)
+from .lua import (ADD_TEMPLATE, BURY_TEMPLATE, COMPLETE_TEMPLATE,
+                  DROP_TEMPLATE, GET_TEMPLATE, RESCHEDULE_TEMPLATE)
 
 LOGGER = logging.getLogger(__name__)
 
