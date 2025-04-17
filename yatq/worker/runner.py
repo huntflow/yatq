@@ -330,16 +330,16 @@ class Worker:
             coro_stack = []
             while True:
                 try:
-                    frame = coro.cr_frame
+                    frame = coro.cr_frame  # type: ignore
                 except AttributeError:
-                    frame = coro.gi_frame
+                    frame = coro.gi_frame  # type: ignore
 
                 coro_stack.append(str(frame))
 
                 try:
-                    coro = coro.cr_await
+                    coro = coro.cr_await  # type: ignore
                 except AttributeError:
-                    coro = coro.gi_yieldfrom
+                    coro = coro.gi_yieldfrom  # type: ignore
                 if not isawaitable(coro):
                     break
 
