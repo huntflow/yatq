@@ -10,7 +10,6 @@ from .enums import QueueAction, RetryPolicy, TaskState
 
 @dataclass
 class QueueEvent:
-
     """
     Model of some event that happened in queue
 
@@ -32,7 +31,6 @@ class QueueEvent:
 
 @dataclass
 class Task:
-
     """
     Representation of task
 
@@ -107,7 +105,6 @@ class Task:
 
 
 class TaskWrapper(NamedTuple):
-
     """
     Representation of task inside queue
 
@@ -130,7 +127,6 @@ class TaskWrapper(NamedTuple):
 
 
 class ScheduledTask(NamedTuple):
-
     """
     Representation of newly created task
 

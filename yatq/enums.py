@@ -2,7 +2,6 @@ from enum import Enum
 
 
 class RetryPolicy(str, Enum):
-
     """
     Options for task execution retrial
 
@@ -19,7 +18,6 @@ class RetryPolicy(str, Enum):
 
 
 class TaskState(str, Enum):
-
     """
     Enum with all possible task states in queue.
 
@@ -40,7 +38,6 @@ class TaskState(str, Enum):
 
 
 class QueueAction(str, Enum):
-
     """
     Types of events that can happen to tasks in queue. Used in queue events logging.
 

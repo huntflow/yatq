@@ -7,7 +7,6 @@ from yatq.worker.job.simple import SimpleJob
 
 
 class SimpleJobFactory(BaseJobFactory[SimpleJob]):
-
     """
     Simple job factory implementation. Job class is chosen from
     `handlers` mapping using `name` key from task data.

@@ -16,8 +16,7 @@ if AIOREDIS_USE:
     else:  # pragma: no cover
         from aioredis.errors import ReplyError
 
-        class NoScriptError(ReplyError):
-            ...
+        class NoScriptError(ReplyError): ...
 
         async def eval_sha(
             client: aioredis.Redis, digest: str, args: Tuple[Any]

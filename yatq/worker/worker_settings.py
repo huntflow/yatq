@@ -18,7 +18,6 @@ T_ExceptionHandler = Callable[[BaseJob, T_ExcInfo], Awaitable]
 
 
 class WorkerSettings(ABC):
-
     """
     WorkerSettings class is used to configure worker.
 

@@ -9,7 +9,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class SimpleJob(BaseJob):
-
     """
     Simple job class implementation. It takes `kwargs` from task data
     and passes them to `run` and `post_process`.
@@ -47,5 +46,4 @@ class SimpleJob(BaseJob):
     async def run(self, **kwargs) -> Any:  # pragma: no cover
         ...
 
-    async def post_process(self, **kwargs) -> None:
-        ...
+    async def post_process(self, **kwargs) -> None: ...

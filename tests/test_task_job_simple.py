@@ -109,7 +109,7 @@ async def test_job_simple_call_non_json_result():
     task = Task("test", timeout=0, encoded_data=json.dumps({"kwargs": {"test": 1}}))
 
     class Job(SimpleJob):
-        async def run(self, **kwargs) -> None:
+        async def run(self, **kwargs) -> object:
             return object()
 
     job = Job(task)

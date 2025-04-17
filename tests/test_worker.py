@@ -437,5 +437,6 @@ async def test_worker_on_task_process_exception_failure(
     assert not run_task.exception()
 
     task = await task_queue.check_task(scheduled_task.id)
+    assert task
     assert task.state == TaskState.FAILED
     assert len(worker._job_handlers) == 0
