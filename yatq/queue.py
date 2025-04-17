@@ -22,7 +22,7 @@ from .defaults import (
     DEFAULT_TASK_EXPIRATION,
     DEFAULT_TIMEOUT,
 )
-from .dto import QueueEvent, ScheduledTask, Task, TaskWrapper
+from .dto import DATETIME_FORMAT, QueueEvent, ScheduledTask, Task, TaskWrapper
 from .enums import QueueAction, RetryPolicy, TaskState
 from .exceptions import (
     RescheduledTaskMissing,
@@ -45,7 +45,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 def encode_task(task: Task) -> str:
-    return json.dumps(dataclasses.asdict(task))
+    data = dataclasses.asdict(task)
+    print(data)
+    data["created"] = data["created"].strftime(DATETIME_FORMAT)
+    if data["finished"]:
+        data["finished"] = data["finished"].strftime(DATETIME_FORMAT)
+    print(data)
+    return json.dumps(data)
 
 
 def decode_task(data: dict) -> Task:

@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -7,6 +6,8 @@ from typing import Any, Dict, List, NamedTuple, Optional
 
 from .defaults import DEFAULT_TASK_EXPIRATION
 from .enums import QueueAction, RetryPolicy, TaskState
+
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
 
 @dataclass
@@ -86,15 +87,23 @@ class Task:
     retry_counter: int = 0
     retry_limit: int = 3
 
+    created: datetime = field(default_factory=datetime.now)
+    finished: Optional[datetime] = None
+
     @classmethod
     def build(cls, **kwargs) -> "Task":
-        return cls(
-            **{
-                k: v
-                for k, v in kwargs.items()
-                if k in inspect.signature(cls).parameters
-            }
-        )
+        # compatibility with task queue
+        data = {}
+        for k, v in kwargs.items():
+            if k == "completed_data_ttl":
+                data["ttl"] = v
+            if k == "ttl" and data.get("ttl"):
+                continue
+            if k in ("created", "finished") and v:
+                v = datetime.strptime(v, DATETIME_FORMAT)
+            data[k] = v
+
+        return cls(**data)
 
     @property
     def data(self) -> Optional[Dict]:
