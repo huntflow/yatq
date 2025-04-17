@@ -52,6 +52,7 @@ async def test_task_data_cleanup(task_queue, queue_checker):
         retry_limit=1,
         retry_delay=0,
         keep_completed_data=False,
+        completed_data_ttl=60,
     )
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
     task = await task_queue.get_task()

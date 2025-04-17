@@ -188,7 +188,7 @@ async def test_task_unique_processing_non_conflicting(task_queue, queue_checker)
 
 @pytest.mark.asyncio
 async def test_task_completion(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -214,7 +214,7 @@ async def test_task_completion(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_completion_failed(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -240,7 +240,7 @@ async def test_task_completion_failed(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_failure(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -264,7 +264,7 @@ async def test_task_failure(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_retry_no_policy(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -511,6 +511,7 @@ async def test_task_retry_limit(task_queue, queue_checker):
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=retry_limit,
         retry_delay=0,
+        completed_data_ttl=60,
     )
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)

@@ -2,7 +2,6 @@ import asyncio
 import logging.config
 import sys
 import traceback
-from calendar import day_name
 from datetime import datetime
 from inspect import isawaitable
 from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast

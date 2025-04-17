@@ -46,11 +46,9 @@ LOGGER = logging.getLogger(__name__)
 
 def encode_task(task: Task) -> str:
     data = dataclasses.asdict(task)
-    print(data)
     data["created"] = data["created"].strftime(DATETIME_FORMAT)
     if data["finished"]:
         data["finished"] = data["finished"].strftime(DATETIME_FORMAT)
-    print(data)
     return json.dumps(data)
 
 
@@ -136,6 +134,7 @@ class Queue:
         ignore_existing: bool = True,
         ttl: Optional[int] = None,
         keep_completed_data: bool = True,
+        completed_data_ttl: int = 0,
     ) -> ScheduledTask:
         task_id = str(uuid4())
         self.logger.debug("Task data to add: %s", task_data)
@@ -154,6 +153,7 @@ class Queue:
             retry_limit=retry_limit,
             ttl=ttl,
             keep_completed_data=keep_completed_data,
+            completed_data_ttl=completed_data_ttl,
         )
         task.data = task_data
         serialized_task = encode_task(task)
@@ -211,7 +211,7 @@ class Queue:
             wrapped_task.key,
             wrapped_task.task.id,
             encode_task(wrapped_task.task),
-            wrapped_task.task.ttl or DEFAULT_TASK_EXPIRATION,
+            wrapped_task.task.completed_data_ttl,
         )
 
     async def fail_task(self, wrapped_task: TaskWrapper):

@@ -77,6 +77,7 @@ class Task:
 
     ttl: Optional[int] = DEFAULT_TASK_EXPIRATION
     keep_completed_data: bool = False
+    completed_data_ttl: int = 0
 
     result: Any = None
     state: TaskState = TaskState.QUEUED
@@ -95,10 +96,6 @@ class Task:
         # compatibility with task queue
         data = {}
         for k, v in kwargs.items():
-            if k == "completed_data_ttl":
-                data["ttl"] = v
-            if k == "ttl" and data.get("ttl"):
-                continue
             if k in ("created", "finished") and v:
                 v = datetime.strptime(v, DATETIME_FORMAT)
             data[k] = v

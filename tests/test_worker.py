@@ -32,7 +32,9 @@ async def test_worker_start_stop(redis_connection, task_queue: Queue):
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
 
     await asyncio.wait_for(event.wait(), timeout=1)
     await worker.stop()
@@ -66,7 +68,9 @@ async def test_worker_start_stop_default_namespace(
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
 
     await asyncio.wait_for(event.wait(), timeout=1)
     await worker.stop()
@@ -98,7 +102,9 @@ async def test_worker_start_stop_clean_exit(redis_connection, task_queue: Queue)
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
 
     await asyncio.wait_for(event.wait(), timeout=1)
     await asyncio.wait_for(worker.completed_task.wait(), timeout=1)
@@ -126,8 +132,12 @@ async def test_worker_multiple_pending_tasks(redis_connection, task_queue: Queue
         queue_namespace=task_queue.namespace,
     )
 
-    scheduled_task_1 = await task_queue.add_task({"name": "job", "kwargs": {}})
-    scheduled_task_2 = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task_1 = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
+    scheduled_task_2 = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
 
     run_coro = worker.run()
     run_task = asyncio.create_task(run_coro)
@@ -163,7 +173,9 @@ async def test_worker_job_creation_failed(redis_connection, task_queue: Queue):
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
     await worker.stop()
@@ -198,7 +210,9 @@ async def test_worker_job_coroutine_creation_failed(
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
     await worker.stop()
@@ -228,7 +242,9 @@ async def test_worker_job_run_failed(redis_connection, task_queue: Queue):
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
     await worker.stop()
@@ -261,7 +277,9 @@ async def test_worker_job_post_process_failed(redis_connection, task_queue: Queu
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
     await worker.stop()
@@ -292,7 +310,9 @@ async def test_worker_job_run_failed_requeued(redis_connection, task_queue: Queu
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
     scheduled_task = await task_queue.add_task(
-        {"name": "job", "kwargs": {}}, retry_policy=RetryPolicy.LINEAR
+        {"name": "job", "kwargs": {}},
+        retry_policy=RetryPolicy.LINEAR,
+        completed_data_ttl=60,
     )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
@@ -317,6 +337,7 @@ async def test_worker_job_run_failed_requeued_manually(
         {"name": "job", "kwargs": {}},
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=1,
+        completed_data_ttl=60,
     )
     task = await task_queue.check_task(scheduled_task.id)
     assert task.is_last_attempt is False
@@ -347,8 +368,7 @@ async def test_worker_job_run_failed_requeued_manually(
 @pytest.mark.asyncio
 async def test_worker_task_gravekeeper(freezer, redis_connection, task_queue: Queue):
     scheduled_task = await task_queue.add_task(
-        {"name": "job", "kwargs": {}},
-        task_timeout=0,
+        {"name": "job", "kwargs": {}}, task_timeout=0, completed_data_ttl=60
     )
     await task_queue.get_task()
     freezer.tick(10)
@@ -390,7 +410,9 @@ async def test_worker_on_task_process_exception(redis_connection, task_queue: Qu
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
     await worker.stop()
@@ -428,7 +450,9 @@ async def test_worker_on_task_process_exception_failure(
     run_task = asyncio.create_task(run_coro)
     await asyncio.wait_for(worker.started.wait(), timeout=1)
 
-    scheduled_task = await task_queue.add_task({"name": "job", "kwargs": {}})
+    scheduled_task = await task_queue.add_task(
+        {"name": "job", "kwargs": {}}, completed_data_ttl=60
+    )
     await asyncio.wait_for(worker.got_task.wait(), timeout=1)
 
     await worker.stop()
