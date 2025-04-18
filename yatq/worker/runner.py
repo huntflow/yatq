@@ -263,7 +263,7 @@ class Worker:
             )
             self._stop_event.set()
 
-    async def _wait_stopped(self) -> Optional[str]:
+    async def wait_stopped(self) -> Optional[str]:
         await self._complete_pending_jobs()
         self._periodic_poll_task.cancel()
         self._gravekeeper_task.cancel()
@@ -292,7 +292,7 @@ class Worker:
         if self._on_stop_handlers:
             await asyncio.gather(*self._on_stop_handlers)
 
-        return await self._wait_stopped()
+        return await self.wait_stopped()
 
     async def _run_profiler(self):
         import tracemalloc
