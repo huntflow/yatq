@@ -70,9 +70,9 @@ class Worker:
         self._profiling_interval = profiling_interval
         self._on_stop_handlers = on_stop_handlers
 
-        self._gravekeeper_task = None
-        self._profiling_task = None
-        self._periodic_poll_task = None
+        self._gravekeeper_task: Optional[asyncio.Task] = None
+        self._profiling_task: Optional[asyncio.Task] = None
+        self._periodic_poll_task: Optional[asyncio.Task] = None
         self._exit_message = None
 
     @property
