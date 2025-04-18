@@ -4,14 +4,8 @@ from hashlib import sha1
 from string import Template
 from typing import Any, Dict
 
-from yatq.py_version import AIOREDIS_USE
-
-if AIOREDIS_USE:
-    from aioredis import Redis
-else:
-    from redis.asyncio import Redis  # type: ignore # pragma: no cover
-
-from yatq.redis_compat import NoScriptError, eval_sha  # type: ignore
+from redis.asyncio import Redis
+from redis.exceptions import NoScriptError
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +23,7 @@ class LuaFunction:
         await client.script_load(self.lua)
 
     async def _call_cached(self, client: Redis, *args):
-        return await eval_sha(client, self.digest, args)
+        return await client.execute_command("EVALSHA", self.digest, 0, *args)
 
     async def call(self, client: Redis, *args):
         try:

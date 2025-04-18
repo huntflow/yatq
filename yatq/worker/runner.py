@@ -6,12 +6,7 @@ from datetime import datetime
 from inspect import isawaitable
 from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast
 
-from yatq.py_version import AIOREDIS_USE
-
-if AIOREDIS_USE:
-    import aioredis
-else:  # pragma: no cover
-    from redis import asyncio as aioredis  # type: ignore
+from redis.asyncio import Redis
 
 from yatq.defaults import (
     DEFAULT_MAX_JOBS,
@@ -396,7 +391,7 @@ class Worker:
 
 
 def build_worker(
-    redis_client: aioredis.Redis,
+    redis_client: Redis,
     factory_cls: Type[BaseJobFactory],
     factory_kwargs: Optional[Dict],
     queue_names: List[str],

@@ -2,12 +2,7 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Type
 
-from yatq.py_version import AIOREDIS_USE
-
-if AIOREDIS_USE:
-    import aioredis
-else:  # pragma: no cover
-    from redis import asyncio as aioredis  # type: ignore
+from redis.asyncio import Redis
 
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.factory.simple import SimpleJobFactory
@@ -42,7 +37,7 @@ class WorkerSettings(ABC):
 
     @staticmethod
     @abstractmethod
-    async def redis_client() -> aioredis.Redis:  # pragma: no cover
+    async def redis_client() -> Redis:  # pragma: no cover
         ...
 
     @staticmethod
