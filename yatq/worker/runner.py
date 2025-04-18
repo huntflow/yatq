@@ -43,6 +43,7 @@ class Worker:
         gravekeeper_interval: float = 30.0,
         profiling_interval: Optional[float] = None,
         on_stop_handlers: Optional[List[Coroutine]] = None,
+        exit_after_jobs: Optional[int] = None,
     ) -> None:
         self.queue_list = queue_list
         self.task_factory = task_factory
@@ -61,6 +62,8 @@ class Worker:
         self._stop_event = asyncio.Event()
 
         self._max_jobs = max_jobs
+        self._exit_after_jobs = exit_after_jobs
+        self._total_jobs_taken = 0
         self._job_handlers: Dict[asyncio.Task, Tuple[TaskWrapper, Queue]] = {}
 
         self._on_task_process_exception = on_task_process_exception
@@ -244,6 +247,22 @@ class Worker:
         self._stop_event.set()
         self._poll_event.set()
 
+    def _increment_jobs_taken_counter(self) -> None:
+        """
+        Counts total number of jobs taken by worker and triggers stop event if limit is reached
+        """
+        self._total_jobs_taken += 1
+        if not self._exit_after_jobs:
+            return
+
+        if self._total_jobs_taken >= self._exit_after_jobs:
+            LOGGER.warning(
+                "Job limit reached (%s of %s); stopping worker",
+                self._total_jobs_taken,
+                self._exit_after_jobs,
+            )
+            self._stop_event.set()
+
     async def run(self) -> None:
         LOGGER.info(
             "Starting worker, queue list: %s", [q.name for q in self.queue_list]
@@ -254,11 +273,12 @@ class Worker:
 
         periodic_poll_task = asyncio.create_task(self._periodic_poll())
         gravekeeper_task = asyncio.create_task(self._run_gravekeeper())
-
+        await self.start_profiler()
         while not self._stop_event.is_set():
             if self.should_get_new_task:
                 fetched = await self._try_fetch_task()
                 if fetched:
+                    self._increment_jobs_taken_counter()
                     continue
             await self._wait_poll()
 
@@ -266,9 +286,9 @@ class Worker:
             await asyncio.gather(*self._on_stop_handlers)
 
         await self._complete_pending_jobs()
-
         periodic_poll_task.cancel()
         gravekeeper_task.cancel()
+        await self.stop_profiler()
 
     async def _run_profiler(self):
         import tracemalloc
@@ -377,6 +397,8 @@ def build_worker(
     default_ttl: int = DEFAULT_TASK_EXPIRATION,
     profiling_interval: Optional[float] = None,
     on_stop_handlers: Optional[List[Coroutine]] = None,
+    poll_interval: float = 2.0,
+    exit_after_jobs: Optional[int] = None,
 ) -> Worker:
     factory_kwargs = factory_kwargs or {}
     task_factory = factory_cls(**factory_kwargs)
@@ -400,6 +422,8 @@ def build_worker(
         on_task_process_exception=on_task_process_exception,
         profiling_interval=profiling_interval,
         on_stop_handlers=on_stop_handlers,
+        exit_after_jobs=exit_after_jobs,
+        poll_interval=poll_interval,
     )
 
     return worker
