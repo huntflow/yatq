@@ -67,9 +67,13 @@ class Worker:
         self._job_handlers: Dict[asyncio.Task, Tuple[TaskWrapper, Queue]] = {}
 
         self._on_task_process_exception = on_task_process_exception
-        self._profiling_task = None
         self._profiling_interval = profiling_interval
         self._on_stop_handlers = on_stop_handlers
+
+        self._gravekeeper_task = None
+        self._profiling_task = None
+        self._periodic_poll_task = None
+        self._exit_message = None
 
     @property
     def should_get_new_task(self) -> bool:
@@ -242,10 +246,11 @@ class Worker:
         await asyncio.wait(self._job_handlers, return_when=asyncio.ALL_COMPLETED)
         LOGGER.info("All jobs are completed.")
 
-    async def stop(self) -> None:
+    async def stop(self, exit_message: Optional[str] = None) -> None:
         LOGGER.info("Stopping worker")
         self._stop_event.set()
         self._poll_event.set()
+        self._exit_message = exit_message
 
     def _increment_jobs_taken_counter(self) -> None:
         """
@@ -263,7 +268,14 @@ class Worker:
             )
             self._stop_event.set()
 
-    async def run(self) -> None:
+    async def _wait_stopped(self) -> Optional[str]:
+        await self._complete_pending_jobs()
+        self._periodic_poll_task.cancel()
+        self._gravekeeper_task.cancel()
+        await self.stop_profiler()
+        return self._exit_message
+
+    async def run(self) -> Optional[str]:
         LOGGER.info(
             "Starting worker, queue list: %s", [q.name for q in self.queue_list]
         )
@@ -271,8 +283,8 @@ class Worker:
         self.started.clear()
         self.started.set()
 
-        periodic_poll_task = asyncio.create_task(self._periodic_poll())
-        gravekeeper_task = asyncio.create_task(self._run_gravekeeper())
+        self._periodic_poll_task = asyncio.create_task(self._periodic_poll())
+        self._gravekeeper_task = asyncio.create_task(self._run_gravekeeper())
         await self.start_profiler()
         while not self._stop_event.is_set():
             if self.should_get_new_task:
@@ -285,10 +297,7 @@ class Worker:
         if self._on_stop_handlers:
             await asyncio.gather(*self._on_stop_handlers)
 
-        await self._complete_pending_jobs()
-        periodic_poll_task.cancel()
-        gravekeeper_task.cancel()
-        await self.stop_profiler()
+        return await self._wait_stopped()
 
     async def _run_profiler(self):
         import tracemalloc
