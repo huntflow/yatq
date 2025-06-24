@@ -68,7 +68,7 @@ class Worker:
         self._gravekeeper_task: Optional[asyncio.Task] = None
         self._profiling_task: Optional[asyncio.Task] = None
         self._periodic_poll_task: Optional[asyncio.Task] = None
-        self._exit_message = None
+        self._exit_message: Optional[str] = None
 
     @property
     def should_get_new_task(self) -> bool:
@@ -265,8 +265,10 @@ class Worker:
 
     async def wait_stopped(self) -> Optional[str]:
         await self._complete_pending_jobs()
-        self._periodic_poll_task.cancel()
-        self._gravekeeper_task.cancel()
+        if self._periodic_poll_task:
+            self._periodic_poll_task.cancel()
+        if self._gravekeeper_task:
+            self._gravekeeper_task.cancel()
         await self.stop_profiler()
         return self._exit_message
 
