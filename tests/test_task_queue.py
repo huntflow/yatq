@@ -2,9 +2,7 @@ import pytest
 
 from yatq.dto import TaskWrapper
 from yatq.enums import RetryPolicy, TaskState
-from yatq.exceptions import (RescheduleLimitReached, TaskAddException,
-                             TaskRetryForbidden)
-from yatq.queue import Queue
+from yatq.exceptions import RescheduleLimitReached, TaskAddException, TaskRetryForbidden
 
 
 @pytest.mark.asyncio
@@ -593,12 +591,14 @@ async def test_task_wait_time_metric(task_queue, queue_checker, freezer):
     await queue_checker.assert_metric_time_wait(3000)
 
 
+@pytest.mark.asyncio
 async def test_check_task_by_key(task_queue, queue_checker) -> None:
     task_key = "task_key"
     task_info = await task_queue.check_task_by_key(task_key)
     assert task_info is None
 
-    task_id = await task_queue.add_task({"key": "value"}, task_key=task_key)
+    task = await task_queue.add_task({"key": "value"}, task_key=task_key)
+    task_id = task.id
     assert isinstance(task_id, str)
 
     task_info = await task_queue.check_task_by_key(task_key)

@@ -11,16 +11,30 @@ from uuid import uuid4
 
 from redis.asyncio import Redis
 
-from .defaults import (DEFAULT_QUEUE_NAME, DEFAULT_QUEUE_NAMESPACE,
-                       DEFAULT_TASK_EXPIRATION, DEFAULT_TIMEOUT)
+from .defaults import (
+    DEFAULT_QUEUE_NAME,
+    DEFAULT_QUEUE_NAMESPACE,
+    DEFAULT_TASK_EXPIRATION,
+    DEFAULT_TIMEOUT,
+)
 from .dto import DATETIME_FORMAT, QueueEvent, ScheduledTask, Task, TaskWrapper
 from .enums import QueueAction, RetryPolicy, TaskState
-from .exceptions import (RescheduledTaskMissing, RescheduleLimitReached,
-                         TaskAddException, TaskRescheduleException,
-                         TaskRetryForbidden)
+from .exceptions import (
+    RescheduledTaskMissing,
+    RescheduleLimitReached,
+    TaskAddException,
+    TaskRescheduleException,
+    TaskRetryForbidden,
+)
 from .function import LuaFunction
-from .lua import (ADD_TEMPLATE, BURY_TEMPLATE, COMPLETE_TEMPLATE,
-                  DROP_TEMPLATE, GET_TEMPLATE, RESCHEDULE_TEMPLATE)
+from .lua import (
+    ADD_TEMPLATE,
+    BURY_TEMPLATE,
+    COMPLETE_TEMPLATE,
+    DROP_TEMPLATE,
+    GET_TEMPLATE,
+    RESCHEDULE_TEMPLATE,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -286,7 +300,7 @@ class Queue:
         return decode_task(json.loads(task_data))
 
     async def check_task_by_key(self, task_key: str) -> Optional[Task]:
-        task_id = await self.client.hget(self.mapping_key_name, task_key)
+        task_id: Optional[str] = await self.client.hget(self.mapping_key_name, task_key)  # type: ignore
         if not task_id:
             return None
 
