@@ -8,11 +8,8 @@ from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast
 
 from redis.asyncio import Redis
 
-from yatq.defaults import (
-    DEFAULT_MAX_JOBS,
-    DEFAULT_QUEUE_NAMESPACE,
-    DEFAULT_TASK_EXPIRATION,
-)
+from yatq.defaults import (DEFAULT_MAX_JOBS, DEFAULT_QUEUE_NAMESPACE,
+                           DEFAULT_TASK_EXPIRATION)
 from yatq.dto import RunningTaskState, TaskWrapper, WorkerState
 from yatq.enums import TaskState
 from yatq.exceptions import RetryTask, TaskRescheduleException
