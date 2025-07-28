@@ -313,3 +313,12 @@ class Queue:
 
     async def get_pending_count(self) -> int:
         return await self.client.zcard(self.pending_set_name)
+
+    async def check_connection(self) -> bool:
+        try:
+            await self.client.ping()
+        except Exception:
+            self.logger.exception("Failed to ping redis server")
+            return False
+        else:
+            return True
