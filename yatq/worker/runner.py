@@ -204,7 +204,7 @@ class Worker:
         await queue.complete_task(wrapper)
 
         try:
-            await task_job.do_post_process()
+            await context.run(task_job.do_post_process)
         except Exception:
             LOGGER.exception(
                 "Exception in job '%s' (%s) post processing",
