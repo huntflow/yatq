@@ -2,6 +2,7 @@ import asyncio
 import logging.config
 import sys
 import traceback
+from contextvars import copy_context
 from datetime import datetime
 from inspect import isawaitable
 from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast
@@ -17,6 +18,7 @@ from yatq.dto import RunningTaskState, TaskWrapper, WorkerState
 from yatq.enums import TaskState
 from yatq.exceptions import RetryTask, TaskRescheduleException
 from yatq.queue import Queue
+from yatq.vars import JOB_HANDLER, JOB_ID
 from yatq.worker.factory.base import BaseJobFactory
 from yatq.worker.worker_settings import T_ExceptionHandler, T_ExcInfo
 
@@ -156,21 +158,25 @@ class Worker:
             return
 
         job_name = task_job.__class__.__name__
-
+        JOB_HANDLER.set(job_name)
         try:
             # Wrapping coroutine in asyncio.task to copy contextvars
-            process_task = asyncio.create_task(task_job.process())
+            job_coro = task_job.process()
         except Exception:
             LOGGER.exception(
                 "Failed to create job '%s' (%s) coroutine", job_name, task_id
             )
             await queue.fail_task(wrapper)
             return
+        context = copy_context()
+        context.run(JOB_ID.set, wrapper.task.id)
+        context.run(JOB_HANDLER.set, job_name)
+        job_task = context.run(asyncio.create_task, job_coro)
 
         LOGGER.info("Starting job '%s' (%s)", job_name, wrapper.task.id)
         try:
-            await process_task
-            process_task.result()
+            await job_task
+            job_task.result()
         except RetryTask as retry_exc:
             LOGGER.info("Retrying job '%s' (%s)", job_name, task_id)
             await self._try_reschedule_task(wrapper, queue, force=retry_exc.force)
