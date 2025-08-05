@@ -117,6 +117,11 @@ class Worker:
                 wrapper: Optional[TaskWrapper] = await queue.get_task()
             except Exception:  # pragma: no cover
                 LOGGER.exception("Error getting task from queue %s", queue.name)
+                # Checking connectivity
+                if not await queue.check_connection():
+                    LOGGER.warning("Queue %s in unavailable; stopping", queue.name)
+                    await self.stop("Redis connection lost")
+                    return False
                 continue
 
             if not wrapper:
