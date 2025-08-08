@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, Type, TypeVar
 
 from yatq.dto import Task
 from yatq.worker.job.base import BaseJob
@@ -12,5 +12,7 @@ class BaseJobFactory(ABC, Generic[T_BaseJob]):
         super().__init__()
 
     @abstractmethod
-    def create_job(self, task: Task) -> T_BaseJob:
-        ...
+    def get_job_class(self, task: Task) -> Type[T_BaseJob]: ...
+
+    @abstractmethod
+    def create_job(self, task: Task) -> T_BaseJob: ...

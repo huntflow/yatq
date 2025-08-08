@@ -1,16 +1,17 @@
 import asyncio
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from .defaults import DEFAULT_TASK_EXPIRATION
 from .enums import QueueAction, RetryPolicy, TaskState
 
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
+
 
 @dataclass
 class QueueEvent:
-
     """
     Model of some event that happened in queue
 
@@ -32,7 +33,6 @@ class QueueEvent:
 
 @dataclass
 class Task:
-
     """
     Representation of task
 
@@ -77,6 +77,7 @@ class Task:
 
     ttl: Optional[int] = DEFAULT_TASK_EXPIRATION
     keep_completed_data: bool = False
+    completed_data_ttl: int = 0
 
     result: Any = None
     state: TaskState = TaskState.QUEUED
@@ -86,6 +87,20 @@ class Task:
 
     retry_counter: int = 0
     retry_limit: int = 3
+
+    created: datetime = field(default_factory=datetime.now)
+    finished: Optional[datetime] = None
+
+    @classmethod
+    def build(cls, **kwargs) -> "Task":
+        # compatibility with task queue
+        data = {}
+        for k, v in kwargs.items():
+            if k in ("created", "finished") and v:
+                v = datetime.strptime(v, DATETIME_FORMAT)
+            data[k] = v
+
+        return cls(**data)
 
     @property
     def data(self) -> Optional[Dict]:
@@ -107,7 +122,6 @@ class Task:
 
 
 class TaskWrapper(NamedTuple):
-
     """
     Representation of task inside queue
 
@@ -118,11 +132,18 @@ class TaskWrapper(NamedTuple):
 
     key: str
     task: Task
+    taken_at: datetime
     deadline: Optional[datetime] = None
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"Task id = {self.task.id}, name = {(self.task.data or {}).get('name')}, "
+            f"key = {self.key}"
+        )
 
 
 class ScheduledTask(NamedTuple):
-
     """
     Representation of newly created task
 
@@ -132,3 +153,21 @@ class ScheduledTask(NamedTuple):
 
     id: str
     completed: asyncio.Event
+
+
+@dataclass
+class RunningTaskState:
+    id: str
+    key: str
+    data: Any
+    taken_at: datetime
+    handler: str
+    task_stack: List[str]
+    coro_stack: List[str]
+
+
+@dataclass
+class WorkerState:
+    max_tasks: int
+    current_task_count: int
+    current_task_state: List[RunningTaskState]

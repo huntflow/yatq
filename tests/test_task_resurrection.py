@@ -25,14 +25,18 @@ async def test_resurrect_task_pending(task_queue, queue_checker, queue_breaker):
 
 @pytest.mark.asyncio
 async def test_resurrect_task_processing(task_queue, queue_breaker, queue_checker):
-    scheduled_task_1 = await task_queue.add_task({"test": "test"}, task_key="key")
+    scheduled_task_1 = await task_queue.add_task(
+        {"test": "test"}, task_key="key", completed_data_ttl=60
+    )
 
     task = await task_queue.get_task()
     assert task.task.id == scheduled_task_1.id
 
     await queue_breaker.drop_task_processing("key")
 
-    scheduled_task_2 = await task_queue.add_task({"test": "test"}, task_key="key")
+    scheduled_task_2 = await task_queue.add_task(
+        {"test": "test"}, task_key="key", completed_data_ttl=60
+    )
     task_2 = await task_queue.get_task()
 
     task.task.state = TaskState.COMPLETED

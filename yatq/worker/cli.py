@@ -31,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run_worker_cli():  # pragma: no cover
+def run_worker_cli() -> None:  # pragma: no cover
     parser = build_parser()
     args = parser.parse_args()
 

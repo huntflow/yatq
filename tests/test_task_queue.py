@@ -3,7 +3,6 @@ import pytest
 from yatq.dto import TaskWrapper
 from yatq.enums import RetryPolicy, TaskState
 from yatq.exceptions import RescheduleLimitReached, TaskAddException, TaskRetryForbidden
-from yatq.queue import Queue
 
 
 @pytest.mark.asyncio
@@ -188,7 +187,7 @@ async def test_task_unique_processing_non_conflicting(task_queue, queue_checker)
 
 @pytest.mark.asyncio
 async def test_task_completion(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -214,7 +213,7 @@ async def test_task_completion(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_completion_failed(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -240,7 +239,7 @@ async def test_task_completion_failed(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_failure(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -264,7 +263,7 @@ async def test_task_failure(task_queue, queue_checker):
 
 @pytest.mark.asyncio
 async def test_task_retry_no_policy(task_queue, queue_checker):
-    task_1 = await task_queue.add_task({"key": "value"})
+    task_1 = await task_queue.add_task({"key": "value"}, completed_data_ttl=60)
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
 
@@ -511,6 +510,7 @@ async def test_task_retry_limit(task_queue, queue_checker):
         retry_policy=RetryPolicy.LINEAR,
         retry_limit=retry_limit,
         retry_delay=0,
+        completed_data_ttl=60,
     )
     assert isinstance(task_1.id, str)
     await queue_checker.assert_state(task_1.id, TaskState.QUEUED)
@@ -589,3 +589,23 @@ async def test_task_wait_time_metric(task_queue, queue_checker, freezer):
 
     await task_queue.get_task()
     await queue_checker.assert_metric_time_wait(3000)
+
+
+@pytest.mark.asyncio
+async def test_check_task_by_key(task_queue, queue_checker) -> None:
+    task_key = "task_key"
+    task_info = await task_queue.check_task_by_key(task_key)
+    assert task_info is None
+
+    task = await task_queue.add_task({"key": "value"}, task_key=task_key)
+    task_id = task.id
+    assert isinstance(task_id, str)
+
+    task_info = await task_queue.check_task_by_key(task_key)
+    assert task_info.state == TaskState.QUEUED
+    assert task_info.id == task_id
+    assert task_info.data["key"] == "value"
+
+    await queue_checker.assert_pending_count(1)
+    await queue_checker.assert_processing_count(0)
+    await queue_checker.assert_metric_added(1)

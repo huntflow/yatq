@@ -1,18 +1,15 @@
 import asyncio
 import dataclasses
+import datetime
 import json
 import logging
 import time
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4
 
-from yatq.py_version import AIOREDIS_USE
-
-if AIOREDIS_USE:
-    from aioredis import Redis
-else:
-    from redis.asyncio import Redis  # type: ignore # pragma: no cover
+from redis.asyncio import Redis
 
 from .defaults import (
     DEFAULT_QUEUE_NAME,
@@ -20,8 +17,8 @@ from .defaults import (
     DEFAULT_TASK_EXPIRATION,
     DEFAULT_TIMEOUT,
 )
-from .dto import ScheduledTask, Task, TaskWrapper
-from .enums import RetryPolicy, TaskState
+from .dto import DATETIME_FORMAT, QueueEvent, ScheduledTask, Task, TaskWrapper
+from .enums import QueueAction, RetryPolicy, TaskState
 from .exceptions import (
     RescheduledTaskMissing,
     RescheduleLimitReached,
@@ -34,6 +31,7 @@ from .lua import (
     ADD_TEMPLATE,
     BURY_TEMPLATE,
     COMPLETE_TEMPLATE,
+    DROP_TEMPLATE,
     GET_TEMPLATE,
     RESCHEDULE_TEMPLATE,
 )
@@ -42,11 +40,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 def encode_task(task: Task) -> str:
-    return json.dumps(dataclasses.asdict(task))
+    data = dataclasses.asdict(task)
+    data["created"] = data["created"].strftime(DATETIME_FORMAT)
+    if data["finished"]:
+        data["finished"] = data["finished"].strftime(DATETIME_FORMAT)
+    return json.dumps(data)
 
 
 def decode_task(data: dict) -> Task:
-    return Task(**data)
+    return Task.build(**data)
 
 
 PATH_TYPE = Union[str, Path]
@@ -63,7 +65,9 @@ class Queue:
         complete_template: str = COMPLETE_TEMPLATE,
         reschedule_template: str = RESCHEDULE_TEMPLATE,
         bury_template: str = BURY_TEMPLATE,
+        drop_template: str = DROP_TEMPLATE,
         logger: Optional[logging.Logger] = None,
+        default_ttl: int = DEFAULT_TASK_EXPIRATION,
     ):
         assert ":" not in name, "Name should not contain ':'"
         assert ":" not in namespace, "Namespace should not contain ':'"
@@ -88,6 +92,7 @@ class Queue:
         self.metrics_buried_key = f"{self._key_prefix}:metrics:buried"
         self.metrics_broken_key = f"{self._key_prefix}:metrics:broken"
         self.metrics_time_wait = f"{self._key_prefix}:metrics:time_wait"
+        self.default_ttl = default_ttl
         self.environment = {
             "processing_key": self.processing_set_name,
             "pending_key": self.pending_set_name,
@@ -103,7 +108,7 @@ class Queue:
             "metrics_broken_key": self.metrics_broken_key,
             "metrics_time_wait": self.metrics_time_wait,
             "default_timeout": DEFAULT_TIMEOUT,
-            "default_task_expiration": DEFAULT_TASK_EXPIRATION,
+            "default_task_expiration": self.default_ttl,
         }
 
         self._add_function = LuaFunction(add_template, self.environment)
@@ -111,6 +116,7 @@ class Queue:
         self._complete_function = LuaFunction(complete_template, self.environment)
         self._reschedule_function = LuaFunction(reschedule_template, self.environment)
         self._bury_function = LuaFunction(bury_template, self.environment)
+        self._drop_function = LuaFunction(drop_template, self.environment)
 
     async def add_task(
         self,
@@ -121,14 +127,18 @@ class Queue:
         retry_delay: int = 10,
         retry_limit: int = 3,
         ignore_existing: bool = True,
-        ttl=DEFAULT_TASK_EXPIRATION,
-        keep_completed_data=True,
+        ttl: Optional[int] = None,
+        keep_completed_data: bool = True,
+        completed_data_ttl: int = 0,
     ) -> ScheduledTask:
         task_id = str(uuid4())
         self.logger.debug("Task data to add: %s", task_data)
 
         if task_key is None:
             task_key = task_id
+
+        if ttl is None:
+            ttl = self.default_ttl
 
         task = Task(
             id=task_id,
@@ -138,6 +148,7 @@ class Queue:
             retry_limit=retry_limit,
             ttl=ttl,
             keep_completed_data=keep_completed_data,
+            completed_data_ttl=completed_data_ttl,
         )
         task.data = task_data
         serialized_task = encode_task(task)
@@ -178,6 +189,7 @@ class Queue:
             key=task_key,
             deadline=task_deadline,
             task=task,
+            taken_at=datetime.datetime.now(),
         )
 
     async def complete_task(self, wrapped_task: TaskWrapper):
@@ -194,7 +206,7 @@ class Queue:
             wrapped_task.key,
             wrapped_task.task.id,
             encode_task(wrapped_task.task),
-            wrapped_task.task.ttl or 0,
+            wrapped_task.task.completed_data_ttl,
         )
 
     async def fail_task(self, wrapped_task: TaskWrapper):
@@ -210,6 +222,29 @@ class Queue:
             encode_task(wrapped_task.task),
             after,
         )
+
+    async def listen_events(self, queue: asyncio.Queue) -> None:
+        receiver = self.client.pubsub()
+        await receiver.subscribe(self.event_channel_name)
+        try:
+            async for message in receiver.listen():
+                if not message or message["type"] != "message":
+                    continue
+                with suppress(asyncio.QueueFull):
+                    event_type, task_id, task_key, *extra = (
+                        message["data"].decode().split(" ", maxsplit=4)
+                    )
+
+                    event = QueueEvent(
+                        queue=self.name,
+                        action=QueueAction(event_type),
+                        key=task_key if task_key != "NO_KEY" else None,
+                        id=task_id if task_id != "NO_ID" else None,
+                        message=extra[0] if extra else None,
+                    )
+                    queue.put_nowait(event)
+        finally:
+            await receiver.unsubscribe(self.event_channel_name)
 
     async def auto_reschedule_task(
         self, wrapped_task: TaskWrapper, force: bool = False
@@ -252,6 +287,10 @@ class Queue:
         result = await self._bury_function.call(self.client, time.time())
         return result["count"]
 
+    async def drop_task(self, key: str) -> bool:
+        result = await self._drop_function.call(self.client, key)
+        return result["success"]
+
     async def check_task(self, task_id: str) -> Optional[Task]:
         task_data = await self.client.get(f"{self.task_key_prefix}:{task_id}")
 
@@ -260,8 +299,26 @@ class Queue:
 
         return decode_task(json.loads(task_data))
 
+    async def check_task_by_key(self, task_key: str) -> Optional[Task]:
+        task_id: Optional[str] = await self.client.hget(self.mapping_key_name, task_key)  # type: ignore
+        if not task_id:
+            return None
+
+        if isinstance(task_id, bytes):
+            task_id = task_id.decode()
+        return await self.check_task(task_id)
+
     async def get_processing_count(self) -> int:
         return await self.client.zcard(self.processing_set_name)
 
     async def get_pending_count(self) -> int:
         return await self.client.zcard(self.pending_set_name)
+
+    async def check_connection(self) -> bool:
+        try:
+            await self.client.ping()
+        except Exception:
+            self.logger.exception("Failed to ping redis server")
+            return False
+        else:
+            return True

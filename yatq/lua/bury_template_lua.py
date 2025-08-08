@@ -6,6 +6,7 @@ local pending_key = "$pending_key"           -- Redis key with pending tasks ZSE
 local processing_key = "$processing_key"     -- Redis key with processing tasks ZSET
 local task_mapping_key = "$task_mapping_key" -- Redis key with task key:id mapping
 local channel = "$event_channel"             -- Queue's event pubsub channel
+local default_ttl = $default_task_expiration -- Default result TTL
 
 local before_time = tonumber(ARGV[1])
 
@@ -22,13 +23,18 @@ in pubsub.
 --]]
 local function mark_task_as_buried (task_id)
 	local task_data_key = string.format("$task_key_prefix:%s", task_id)
-	local task_data = redis.call("GET", task_data_key)
+	
+	if default_ttl > 0 then
+		local task_data = redis.call("GET", task_data_key)
+		local decoded_task_data = cjson.decode(task_data)
+	
+		decoded_task_data["state"] = "BURIED"
+		task_data = cjson.encode(decoded_task_data)
 
-	local decoded_task_data = cjson.decode(task_data)
-	decoded_task_data["state"] = "BURIED"
-
-	task_data = cjson.encode(decoded_task_data)
-	redis.call("SETEX", task_data_key, $default_task_expiration, task_data)
+		redis.call("SETEX", task_data_key, default_ttl, task_data)
+	else
+		redis.call("DEL", task_data_key)
+	end
 end
 
 --[[ Checks whenever specified key is used in queue's pending or processing set
