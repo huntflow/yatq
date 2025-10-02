@@ -5,7 +5,17 @@ import traceback
 from contextvars import copy_context
 from datetime import datetime
 from inspect import isawaitable
-from typing import Coroutine, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    Awaitable,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from redis.asyncio import Redis
 
@@ -41,6 +51,7 @@ class Worker:
         profiling_interval: Optional[float] = None,
         on_stop_handlers: Optional[List[Coroutine]] = None,
         exit_after_jobs: Optional[int] = None,
+        healthcheck_func: Optional[Callable[[], Awaitable]] = None,
     ) -> None:
         self.queue_list = queue_list
         self.task_factory = task_factory
@@ -71,6 +82,7 @@ class Worker:
         self._profiling_task: Optional[asyncio.Task] = None
         self._periodic_poll_task: Optional[asyncio.Task] = None
         self._exit_message: Optional[str] = None
+        self._healthcheck_func: Optional[Callable[[], Awaitable]] = healthcheck_func
 
     @property
     def should_get_new_task(self) -> bool:
@@ -295,6 +307,9 @@ class Worker:
         self._gravekeeper_task = asyncio.create_task(self._run_gravekeeper())
         await self.start_profiler()
         while not self._stop_event.is_set():
+            if self._healthcheck_func:
+                await self._healthcheck_func()
+
             if self.should_get_new_task:
                 fetched = await self._try_fetch_task()
                 if fetched:
@@ -416,6 +431,7 @@ def build_worker(
     on_stop_handlers: Optional[List[Coroutine]] = None,
     poll_interval: float = 2.0,
     exit_after_jobs: Optional[int] = None,
+    healthcheck_func: Optional[Callable[[], Awaitable]] = None,
 ) -> Worker:
     factory_kwargs = factory_kwargs or {}
     task_factory = factory_cls(**factory_kwargs)
@@ -441,6 +457,7 @@ def build_worker(
         on_stop_handlers=on_stop_handlers,
         exit_after_jobs=exit_after_jobs,
         poll_interval=poll_interval,
+        healthcheck_func=healthcheck_func,
     )
 
     return worker
