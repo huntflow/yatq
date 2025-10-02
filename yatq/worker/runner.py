@@ -54,7 +54,7 @@ class Worker:
         profiling_interval: Optional[float] = None,
         on_stop_handlers: Optional[List[Coroutine]] = None,
         exit_after_jobs: Optional[int] = None,
-        healtcheck: Optional[Callable[[], Coroutine]] = None,
+        healthcheck: Optional[Callable[[], Coroutine]] = None,
     ) -> None:
         self.queue_list = queue_list
         self.task_factory = task_factory
@@ -85,7 +85,7 @@ class Worker:
         self._profiling_task: Optional[asyncio.Task] = None
         self._periodic_poll_task: Optional[asyncio.Task] = None
         self._exit_message: Optional[str] = None
-        self._healtcheck: Callable[[], Coroutine] = healtcheck or _healthcheck_stub
+        self._healthcheck: Callable[[], Coroutine] = healthcheck or _healthcheck_stub
 
     @property
     def should_get_new_task(self) -> bool:
@@ -310,7 +310,7 @@ class Worker:
         self._gravekeeper_task = asyncio.create_task(self._run_gravekeeper())
         await self.start_profiler()
         while not self._stop_event.is_set():
-            await self._healtcheck()
+            await self._healthcheck()
             if self.should_get_new_task:
                 fetched = await self._try_fetch_task()
                 if fetched:
@@ -432,7 +432,7 @@ def build_worker(
     on_stop_handlers: Optional[List[Coroutine]] = None,
     poll_interval: float = 2.0,
     exit_after_jobs: Optional[int] = None,
-    healtcheck: Optional[Callable[[], Coroutine]] = None,
+    healthcheck: Optional[Callable[[], Coroutine]] = None,
 ) -> Worker:
     factory_kwargs = factory_kwargs or {}
     task_factory = factory_cls(**factory_kwargs)
@@ -458,7 +458,7 @@ def build_worker(
         on_stop_handlers=on_stop_handlers,
         exit_after_jobs=exit_after_jobs,
         poll_interval=poll_interval,
-        healtcheck=healtcheck,
+        healthcheck=healthcheck,
     )
 
     return worker
