@@ -6,7 +6,6 @@ from contextvars import copy_context
 from datetime import datetime
 from inspect import isawaitable
 from typing import (
-    Awaitable,
     Callable,
     Coroutine,
     Dict,
@@ -51,7 +50,7 @@ class Worker:
         profiling_interval: Optional[float] = None,
         on_stop_handlers: Optional[List[Coroutine]] = None,
         exit_after_jobs: Optional[int] = None,
-        healthcheck_func: Optional[Callable[[], Awaitable]] = None,
+        healthcheck_func: Optional[Callable[[], Coroutine]] = None,
     ) -> None:
         self.queue_list = queue_list
         self.task_factory = task_factory
@@ -82,7 +81,7 @@ class Worker:
         self._profiling_task: Optional[asyncio.Task] = None
         self._periodic_poll_task: Optional[asyncio.Task] = None
         self._exit_message: Optional[str] = None
-        self._healthcheck_func: Optional[Callable[[], Awaitable]] = healthcheck_func
+        self._healthcheck_func: Optional[Callable[[], Coroutine]] = healthcheck_func
 
     @property
     def should_get_new_task(self) -> bool:
@@ -431,7 +430,7 @@ def build_worker(
     on_stop_handlers: Optional[List[Coroutine]] = None,
     poll_interval: float = 2.0,
     exit_after_jobs: Optional[int] = None,
-    healthcheck_func: Optional[Callable[[], Awaitable]] = None,
+    healthcheck_func: Optional[Callable[[], Coroutine]] = None,
 ) -> Worker:
     factory_kwargs = factory_kwargs or {}
     task_factory = factory_cls(**factory_kwargs)
