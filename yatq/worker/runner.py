@@ -38,7 +38,7 @@ PROFILING_LOGGER = logging.getLogger("yatq.profiling")
 PROFILING_LOGGER.propagate = False
 
 
-async def _healthcheck_stub():
+async def _healthcheck_stub() -> None:
     pass
 
 
