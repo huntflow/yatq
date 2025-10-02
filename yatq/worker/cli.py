@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import logging.config
 import signal
-from typing import Awaitable, Callable, Coroutine, Dict, List, Optional, Type
+from typing import Callable, Coroutine, Dict, List, Optional, Type
 
 from yatq.defaults import DEFAULT_LOGGING_CONFIG
 from yatq.worker.runner import build_worker
