@@ -49,7 +49,7 @@ async def async_run(
     queue_names: List[str],
     logging_config: Optional[Dict] = None,
     max_jobs: Optional[int] = None,
-    healthcheck_func: Optional[Callable[[], Coroutine]] = None,
+    healtchcheck: Optional[Callable[[], Coroutine]] = None,
 ) -> None:  # pragma: no cover
     logging_config = logging_config or DEFAULT_LOGGING_CONFIG
     logging.config.dictConfig(logging_config)
@@ -67,7 +67,7 @@ async def async_run(
             max_jobs=max_jobs,
             queue_namespace=worker_settings.queue_namespace,
             on_task_process_exception=worker_settings.on_task_process_exception,
-            healthcheck_func=healthcheck_func,
+            healtchcheck=healtchcheck,
         )
 
         stop_signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
@@ -84,7 +84,7 @@ def run(
     queue_names: List[str],
     logging_config: Optional[Dict] = None,
     max_jobs: Optional[int] = None,
-    healthcheck_func: Optional[Callable[[], Coroutine]] = None,
+    healtchcheck: Optional[Callable[[], Coroutine]] = None,
 ) -> None:  # pragma: no cover
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
@@ -93,6 +93,6 @@ def run(
             queue_names=queue_names,
             logging_config=logging_config,
             max_jobs=max_jobs,
-            healthcheck_func=healthcheck_func,
+            healtchcheck=healtchcheck,
         ),
     )
