@@ -85,9 +85,7 @@ class Worker:
         self._profiling_task: Optional[asyncio.Task] = None
         self._periodic_poll_task: Optional[asyncio.Task] = None
         self._exit_message: Optional[str] = None
-        self._healtchcheck: Optional[Callable[[], Coroutine]] = (
-            healtchcheck or _healthcheck_stub
-        )
+        self._healtchcheck: Callable[[], Coroutine] = healtchcheck or _healthcheck_stub
 
     @property
     def should_get_new_task(self) -> bool:
