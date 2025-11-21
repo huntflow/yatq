@@ -93,6 +93,13 @@ class QueueChecker:
 
         assert stored_value == value
 
+    async def assert_metric_failed(self, value: int):
+        stored_value = int(
+            await self.queue.client.get(self.queue.metrics_failed_key) or 0
+        )
+
+        assert stored_value == value
+
     async def assert_metric_resurrected(self, value: int):
         stored_value = int(
             await self.queue.client.get(self.queue.metrics_resurrected_key) or 0

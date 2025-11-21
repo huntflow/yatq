@@ -10,8 +10,9 @@ local default_ttl = $default_task_expiration -- Default result TTL
 
 local task_key = ARGV[1]                     -- Task's key
 local task_id = ARGV[2]                      -- Task's ID, unique for each invocation
-local final_task_data = ARGV[3]              -- Task's final state
+local final_task_data = ARGV[3]              -- Task's final data
 local ttl = tonumber(ARGV[4])                -- Completed Task's time to keep
+local task_state = ARGV[5]                   -- Task's final state
 
 
 local function incr_metric_key (key)
@@ -65,6 +66,10 @@ local message = string.format("COMPLETED %s %s", task_id, task_key)
 redis.call("PUBLISH", channel, message)
 
 incr_metric_key("$metrics_completed_key")
+
+if task_state == "FAILED" then
+    incr_metric_key("$metrics_failed_key")
+end
 
 return cjson.encode({success = true})
 """

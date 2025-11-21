@@ -235,6 +235,7 @@ async def test_task_completion_failed(task_queue, queue_checker):
     await queue_checker.assert_metric_added(1)
     await queue_checker.assert_metric_taken(1)
     await queue_checker.assert_metric_completed(1)
+    await queue_checker.assert_metric_failed(1)
 
 
 @pytest.mark.asyncio
