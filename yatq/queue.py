@@ -88,6 +88,7 @@ class Queue:
         self.metrics_taken_key = f"{self._key_prefix}:metrics:taken"
         self.metrics_requeued_key = f"{self._key_prefix}:metrics:requeued"
         self.metrics_completed_key = f"{self._key_prefix}:metrics:completed"
+        self.metrics_failed_key = f"{self._key_prefix}:metrics:failed"
         self.metrics_resurrected_key = f"{self._key_prefix}:metrics:resurrected"
         self.metrics_buried_key = f"{self._key_prefix}:metrics:buried"
         self.metrics_broken_key = f"{self._key_prefix}:metrics:broken"
@@ -103,6 +104,7 @@ class Queue:
             "metrics_taken_key": self.metrics_taken_key,
             "metrics_requeued_key": self.metrics_requeued_key,
             "metrics_completed_key": self.metrics_completed_key,
+            "metrics_failed_key": self.metrics_failed_key,
             "metrics_resurrected_key": self.metrics_resurrected_key,
             "metrics_buried_key": self.metrics_buried_key,
             "metrics_broken_key": self.metrics_broken_key,
@@ -207,6 +209,7 @@ class Queue:
             wrapped_task.task.id,
             encode_task(wrapped_task.task),
             wrapped_task.task.completed_data_ttl,
+            wrapped_task.task.state,
         )
 
     async def fail_task(self, wrapped_task: TaskWrapper):
