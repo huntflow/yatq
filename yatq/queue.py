@@ -319,7 +319,7 @@ class Queue:
 
     async def check_connection(self) -> bool:
         try:
-            await self.client.ping()
+            await self.client.ping()  # noqa
         except Exception:
             self.logger.exception("Failed to ping redis server")
             return False
